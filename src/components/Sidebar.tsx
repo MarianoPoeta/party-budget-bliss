@@ -29,12 +29,12 @@ const Sidebar = () => {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-blue-900 to-blue-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 bg-blue-950/50">
+          <div className="flex items-center justify-center h-16 px-4 bg-slate-900">
             <h1 className="text-xl font-bold text-white">Bachelor Pro</h1>
           </div>
 
@@ -49,8 +49,8 @@ const Sidebar = () => {
                   className={cn(
                     "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200",
                     isActive
-                      ? "bg-orange-500 text-white shadow-lg"
-                      : "text-blue-100 hover:bg-blue-700/50 hover:text-white"
+                      ? "bg-slate-700 text-white shadow-lg"
+                      : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                   )}
                   onClick={() => setIsOpen(false)}
                 >
@@ -62,8 +62,8 @@ const Sidebar = () => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-blue-700">
-            <p className="text-xs text-blue-200 text-center">
+          <div className="p-4 border-t border-slate-700">
+            <p className="text-xs text-slate-400 text-center">
               Bachelor Organizer v1.0
             </p>
           </div>

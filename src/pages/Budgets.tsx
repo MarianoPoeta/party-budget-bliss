@@ -79,7 +79,7 @@ const Budgets = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Budgets</h1>
             <p className="text-gray-600">Manage all your bachelor party budgets</p>
           </div>
-          <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+          <button className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
             <Plus className="h-4 w-4" />
             New Budget
           </button>
@@ -96,7 +96,7 @@ const Budgets = () => {
                 placeholder="Search clients..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
               />
             </div>
 
@@ -108,7 +108,7 @@ const Budgets = () => {
                   onClick={() => setStatusFilter(status)}
                   className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                     statusFilter === status
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-slate-800 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
