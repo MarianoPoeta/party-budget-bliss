@@ -3,73 +3,60 @@ import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import Layout from '../components/Layout';
 import MenuCard from '../components/MenuCard';
+import MenuForm from '../components/MenuForm';
 import { Menu } from '../types/Menu';
 
 // Mock data
 const mockMenus: Menu[] = [
   {
     id: '1',
-    name: 'Premium Steakhouse Experience',
-    description: 'Elegant 3-course dinner featuring prime cuts and fine wines',
-    type: 'dinner',
+    name: 'Premium BBQ Package',
+    description: 'High-quality barbecue experience with premium cuts and craft beer pairings',
+    type: 'lunch',
     pricePerPerson: 85,
-    minPeople: 6,
-    maxPeople: 20,
-    restaurant: 'Prime & Proper',
-    isActive: true,
+    minPeople: 8,
+    maxPeople: 25,
     items: [
-      { id: '1', name: 'Wagyu Ribeye', description: 'Premium cut with truffle butter', price: 65, category: 'main' },
-      { id: '2', name: 'Lobster Bisque', description: 'Rich and creamy starter', price: 18, category: 'appetizer' },
-      { id: '3', name: 'Chocolate Lava Cake', description: 'Warm chocolate cake with vanilla ice cream', price: 12, category: 'dessert' },
+      { id: '1', name: 'Wagyu Beef Brisket', description: 'Slow-smoked for 12 hours', price: 32, category: 'main' },
+      { id: '2', name: 'Craft Beer Selection', description: 'Local brewery selection', price: 12, category: 'beverage' },
+      { id: '3', name: 'Smoked Wings', description: 'Bourbon glazed chicken wings', price: 18, category: 'appetizer' },
+      { id: '4', name: 'Bourbon Pecan Pie', description: 'House-made dessert', price: 14, category: 'dessert' }
     ],
+    restaurant: 'Smokehouse Prime',
+    isActive: true,
   },
   {
     id: '2',
-    name: 'BBQ Feast Package',
-    description: 'All-you-can-eat BBQ with sides and craft beer selection',
-    type: 'lunch',
-    pricePerPerson: 45,
-    minPeople: 8,
-    maxPeople: 30,
-    restaurant: 'Smoky Joes BBQ',
-    isActive: true,
+    name: 'Rooftop Cocktail Experience',
+    description: 'Exclusive rooftop cocktail service with city views and premium spirits',
+    type: 'cocktail',
+    pricePerPerson: 65,
+    minPeople: 6,
+    maxPeople: 20,
     items: [
-      { id: '4', name: 'Mixed Meat Platter', description: 'Brisket, ribs, and pulled pork', price: 28, category: 'main' },
-      { id: '5', name: 'Mac & Cheese', description: 'Creamy three-cheese blend', price: 8, category: 'appetizer' },
-      { id: '6', name: 'Craft Beer Selection', description: 'Local brewery favorites', price: 6, category: 'beverage' },
+      { id: '5', name: 'Signature Old Fashioned', description: 'House bourbon blend', price: 16, category: 'beverage' },
+      { id: '6', name: 'Gourmet Sliders', description: 'Wagyu beef mini burgers', price: 22, category: 'appetizer' },
+      { id: '7', name: 'Whiskey Flight', description: 'Selection of premium whiskeys', price: 28, category: 'special' }
     ],
+    restaurant: 'Sky Lounge',
+    isActive: true,
   },
   {
     id: '3',
-    name: 'Cocktail & Canapés',
-    description: 'Sophisticated cocktail hour with premium spirits and hors d\'oeuvres',
-    type: 'cocktail',
-    pricePerPerson: 65,
-    minPeople: 10,
-    maxPeople: 25,
-    restaurant: 'The Rooftop Bar',
-    isActive: true,
+    name: 'Steakhouse Dinner',
+    description: 'Classic steakhouse experience with premium cuts and wine pairings',
+    type: 'dinner',
+    pricePerPerson: 120,
+    minPeople: 4,
+    maxPeople: 16,
     items: [
-      { id: '7', name: 'Premium Cocktails', description: 'Top-shelf spirits and mixers', price: 15, category: 'beverage' },
-      { id: '8', name: 'Shrimp Cocktail', description: 'Jumbo shrimp with cocktail sauce', price: 12, category: 'appetizer' },
-      { id: '9', name: 'Beef Sliders', description: 'Mini wagyu burgers with truffle aioli', price: 8, category: 'special' },
+      { id: '8', name: 'Dry-Aged Ribeye', description: '28-day aged prime cut', price: 58, category: 'main' },
+      { id: '9', name: 'Lobster Tail', description: 'Canadian cold water lobster', price: 45, category: 'main' },
+      { id: '10', name: 'Wine Pairing', description: 'Sommelier selected wines', price: 35, category: 'beverage' },
+      { id: '11', name: 'Chocolate Soufflé', description: 'Made to order dessert', price: 18, category: 'dessert' }
     ],
-  },
-  {
-    id: '4',
-    name: 'Brunch Extravaganza',
-    description: 'Weekend brunch with bottomless mimosas and breakfast classics',
-    type: 'brunch',
-    pricePerPerson: 55,
-    minPeople: 6,
-    maxPeople: 18,
-    restaurant: 'Sunday Social',
+    restaurant: 'Prime Cut Steakhouse',
     isActive: true,
-    items: [
-      { id: '10', name: 'Eggs Benedict', description: 'Poached eggs with hollandaise', price: 16, category: 'main' },
-      { id: '11', name: 'Bottomless Mimosas', description: 'Unlimited champagne cocktails', price: 25, category: 'beverage' },
-      { id: '12', name: 'French Toast', description: 'Brioche with maple syrup', price: 14, category: 'main' },
-    ],
   },
 ];
 
@@ -77,17 +64,28 @@ const Menus = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<Menu['type'] | 'all'>('all');
   const [showInactive, setShowInactive] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
 
   const types: Array<Menu['type'] | 'all'> = ['all', 'breakfast', 'lunch', 'dinner', 'brunch', 'cocktail', 'catering'];
 
   const filteredMenus = mockMenus.filter(menu => {
     const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         menu.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         menu.restaurant.toLowerCase().includes(searchTerm.toLowerCase());
+                         menu.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || menu.type === typeFilter;
     const matchesStatus = showInactive || menu.isActive;
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  const handleEditMenu = (menu: Menu) => {
+    setEditingMenu(menu);
+    setIsFormOpen(true);
+  };
+
+  const handleNewMenu = () => {
+    setEditingMenu(null);
+    setIsFormOpen(true);
+  };
 
   return (
     <Layout>
@@ -96,9 +94,12 @@ const Menus = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Menus</h1>
-            <p className="text-gray-600">Manage catering and dining options for bachelor parties</p>
+            <p className="text-gray-600">Manage dining options for bachelor parties</p>
           </div>
-          <button className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+          <button 
+            onClick={handleNewMenu}
+            className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+          >
             <Plus className="h-4 w-4" />
             New Menu
           </button>
@@ -112,7 +113,7 @@ const Menus = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search menus or restaurants..."
+                placeholder="Search menus..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
@@ -160,7 +161,7 @@ const Menus = () => {
             <MenuCard
               key={menu.id}
               {...menu}
-              onClick={() => console.log('Edit menu:', menu.id)}
+              onClick={() => handleEditMenu(menu)}
             />
           ))}
         </div>
@@ -170,6 +171,12 @@ const Menus = () => {
             <p className="text-gray-500 text-lg">No menus found matching your criteria.</p>
           </div>
         )}
+
+        <MenuForm
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          menu={editingMenu}
+        />
       </div>
     </Layout>
   );

@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import Layout from '../components/Layout';
 import ActivityCard from '../components/ActivityCard';
+import ActivityForm from '../components/ActivityForm';
 import { Activity } from '../types/Activity';
 
 // Mock data
@@ -76,6 +77,8 @@ const Activities = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<Activity['category'] | 'all'>('all');
   const [showInactive, setShowInactive] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
   const categories: Array<Activity['category'] | 'all'> = ['all', 'outdoor', 'indoor', 'nightlife', 'dining', 'adventure', 'cultural'];
 
@@ -87,6 +90,16 @@ const Activities = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  const handleEditActivity = (activity: Activity) => {
+    setEditingActivity(activity);
+    setIsFormOpen(true);
+  };
+
+  const handleNewActivity = () => {
+    setEditingActivity(null);
+    setIsFormOpen(true);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -96,7 +109,10 @@ const Activities = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Activities</h1>
             <p className="text-gray-600">Manage activities available for bachelor parties</p>
           </div>
-          <button className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+          <button 
+            onClick={handleNewActivity}
+            className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+          >
             <Plus className="h-4 w-4" />
             New Activity
           </button>
@@ -158,7 +174,7 @@ const Activities = () => {
             <ActivityCard
               key={activity.id}
               {...activity}
-              onClick={() => console.log('Edit activity:', activity.id)}
+              onClick={() => handleEditActivity(activity)}
             />
           ))}
         </div>
@@ -168,6 +184,12 @@ const Activities = () => {
             <p className="text-gray-500 text-lg">No activities found matching your criteria.</p>
           </div>
         )}
+
+        <ActivityForm
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          activity={editingActivity}
+        />
       </div>
     </Layout>
   );
