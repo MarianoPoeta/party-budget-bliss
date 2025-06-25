@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import Layout from '../components/Layout';
 import BudgetCard, { BudgetStatus } from '../components/BudgetCard';
+import { Link } from 'react-router-dom';
 
 // Mock data
 const mockBudgets = [
@@ -79,10 +79,12 @@ const Budgets = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Budgets</h1>
             <p className="text-gray-600">Manage all your bachelor party budgets</p>
           </div>
-          <button className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
-            <Plus className="h-4 w-4" />
-            New Budget
-          </button>
+          <Link to="/budgets/new">
+            <button className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+              <Plus className="h-4 w-4" />
+              New Budget
+            </button>
+          </Link>
         </div>
 
         {/* Filters */}
