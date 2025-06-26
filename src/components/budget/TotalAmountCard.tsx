@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { DollarSign } from 'lucide-react';
 
 interface TotalAmountCardProps {
@@ -10,13 +10,15 @@ interface TotalAmountCardProps {
 const TotalAmountCard: React.FC<TotalAmountCardProps> = ({ totalAmount }) => {
   return (
     <Card className="border-slate-200 bg-slate-50">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <DollarSign className="h-6 w-6 text-slate-600 mr-2" />
-            <span className="text-lg font-semibold text-slate-700">Total Amount</span>
-          </div>
-          <span className="text-2xl font-bold text-slate-900">${totalAmount?.toLocaleString()}</span>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5" />
+          Total Amount
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold text-slate-900">
+          ${totalAmount.toLocaleString()}
         </div>
       </CardContent>
     </Card>

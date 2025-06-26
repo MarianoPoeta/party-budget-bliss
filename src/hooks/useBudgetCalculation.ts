@@ -1,12 +1,11 @@
 
-import { useEffect, useState } from 'react';
-import { MealTemplate, ActivityTemplate, TransportTemplate as TransportTemplateType, StayTemplate as StayTemplateType } from '../types/Budget';
+import { useMemo } from 'react';
 
-interface UseBudgetCalculationProps {
-  selectedMeals: MealTemplate[];
-  selectedActivities: ActivityTemplate[];
-  selectedTransport: TransportTemplateType[];
-  selectedStay?: StayTemplateType;
+interface BudgetCalculationProps {
+  selectedMeals: any[];
+  selectedActivities: any[];
+  selectedTransport: any[];
+  selectedStay?: any;
   guestCount: number;
   extras: number;
 }
@@ -18,39 +17,37 @@ export const useBudgetCalculation = ({
   selectedStay,
   guestCount,
   extras
-}: UseBudgetCalculationProps) => {
-  const [totalAmount, setTotalAmount] = useState(0);
+}: BudgetCalculationProps) => {
+  return useMemo(() => {
+    let total = 0;
 
-  useEffect(() => {
-    const calculateTotal = () => {
-      let total = 0;
-      
-      selectedMeals.forEach(meal => {
-        total += meal.pricePerPerson * guestCount;
-      });
-      
-      selectedActivities.forEach(activity => {
-        total += activity.basePrice;
-        if (activity.transportRequired && activity.transportCost) {
-          total += activity.transportCost;
-        }
-      });
-      
-      selectedTransport.forEach(transport => {
-        total += transport.pricePerHour * 8; // Assuming 8 hours average
-      });
-      
-      if (selectedStay) {
-        total += selectedStay.pricePerNight * 2; // Assuming 2 nights
+    // Calculate meals
+    selectedMeals.forEach(meal => {
+      total += meal.pricePerPerson * guestCount;
+    });
+
+    // Calculate activities
+    selectedActivities.forEach(activity => {
+      total += activity.basePrice;
+      if (activity.transportRequired && activity.includeTransport) {
+        total += activity.transportCost || 0;
       }
-      
-      total += extras;
-      
-      setTotalAmount(total);
-    };
+    });
 
-    calculateTotal();
+    // Calculate transport
+    selectedTransport.forEach(transport => {
+      total += transport.pricePerHour * 2; // Default 2 hours
+    });
+
+    // Calculate stay
+    if (selectedStay) {
+      const rooms = Math.ceil(guestCount / selectedStay.maxOccupancy);
+      total += selectedStay.pricePerNight * rooms;
+    }
+
+    // Add extras
+    total += extras;
+
+    return total;
   }, [selectedMeals, selectedActivities, selectedTransport, selectedStay, guestCount, extras]);
-
-  return totalAmount;
 };

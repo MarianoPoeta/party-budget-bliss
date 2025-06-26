@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
-import { Plus, Minus } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '../ui/card';
 
 interface BudgetSectionProps {
   title: string;
@@ -20,23 +19,34 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({
   children
 }) => {
   return (
-    <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <Card className="border-slate-200">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-slate-50">
-            <CardTitle className="flex items-center justify-between">
-              {title} {count > 0 && `(${count})`}
-              {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            </CardTitle>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="space-y-6">
-            {children}
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+    <Card className="border-slate-200">
+      <CardHeader 
+        className="cursor-pointer hover:bg-slate-50 transition-colors"
+        onClick={onToggle}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            {count > 0 && (
+              <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-full text-sm font-medium">
+                {count}
+              </span>
+            )}
+          </div>
+          {isOpen ? (
+            <ChevronDown className="h-5 w-5 text-slate-600" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-slate-600" />
+          )}
+        </div>
+      </CardHeader>
+      
+      {isOpen && (
+        <CardContent>
+          {children}
+        </CardContent>
+      )}
+    </Card>
   );
 };
 

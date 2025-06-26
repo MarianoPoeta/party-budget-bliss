@@ -1,7 +1,7 @@
 
 import { Plus } from 'lucide-react';
 import Layout from '../components/Layout';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import BudgetsSummaryCards from '../components/budget/BudgetsSummaryCards';
 import RevenueBreakdownCard from '../components/budget/RevenueBreakdownCard';
@@ -10,6 +10,7 @@ import BudgetsGrid from '../components/budget/BudgetsGrid';
 import { useBudgetsData } from '../hooks/useBudgetsData';
 
 const Budgets = () => {
+  const navigate = useNavigate();
   const {
     budgets,
     statusCounts,
@@ -24,7 +25,7 @@ const Budgets = () => {
   } = useBudgetsData();
 
   const handleBudgetClick = (budgetId: string) => {
-    console.log('View budget:', budgetId);
+    navigate(`/budgets/${budgetId}`);
   };
 
   return (
