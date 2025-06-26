@@ -54,7 +54,7 @@ const BudgetsFilters: React.FC<BudgetsFiltersProps> = ({
                 type="date"
                 placeholder="Start date"
                 value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                 className="pl-10"
               />
             </div>
@@ -64,7 +64,7 @@ const BudgetsFilters: React.FC<BudgetsFiltersProps> = ({
                 type="date"
                 placeholder="End date"
                 value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                 className="pl-10"
               />
             </div>
