@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import MealsTemplate from '../components/MealsTemplate';
@@ -10,12 +10,12 @@ import StayTemplate from '../components/StayTemplate';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { 
   MealTemplate, 
   ActivityTemplate, 
   TransportTemplate as TransportTemplateType, 
-  StayTemplate as StayTemplateType, 
-  BudgetItem,
+  StayTemplate as StayTemplateType,
   NewBudget as NewBudgetType 
 } from '../types/Budget';
 
@@ -117,11 +117,8 @@ const mockStay: StayTemplateType[] = [
   }
 ];
 
-const steps = ['Basic Info', 'Meals', 'Activities', 'Transport', 'Stay', 'Review'];
-
 const NewBudget: React.FC = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
   const [budget, setBudget] = useState<Partial<NewBudgetType>>({
     clientName: '',
     eventDate: '',
@@ -133,14 +130,14 @@ const NewBudget: React.FC = () => {
     totalAmount: 0
   });
 
-  const [templates, setTemplates] = useState({
+  const [templates] = useState({
     meals: mockMeals,
     activities: mockActivities,
     transport: mockTransport,
     stay: mockStay
   });
 
-  const [editingItems, setEditingItems] = useState<{
+  const [selectedItems, setSelectedItems] = useState<{
     meals: MealTemplate[];
     activities: ActivityTemplate[];
     transport: TransportTemplateType[];
@@ -151,38 +148,58 @@ const NewBudget: React.FC = () => {
     transport: []
   });
 
+  const [extras, setExtras] = useState<number>(0);
+  
+  const [openSections, setOpenSections] = useState<{
+    basicInfo: boolean;
+    meals: boolean;
+    activities: boolean;
+    transport: boolean;
+    stay: boolean;
+    extras: boolean;
+  }>({
+    basicInfo: true,
+    meals: true,
+    activities: true,
+    transport: true,
+    stay: true,
+    extras: true
+  });
+
   useEffect(() => {
     // Calculate total amount whenever items change
     const calculateTotal = () => {
       let total = 0;
       
-      editingItems.meals.forEach(meal => {
+      selectedItems.meals.forEach(meal => {
         total += meal.pricePerPerson * (budget.guestCount || 0);
       });
       
-      editingItems.activities.forEach(activity => {
+      selectedItems.activities.forEach(activity => {
         total += activity.basePrice;
         if (activity.transportRequired && activity.transportCost) {
           total += activity.transportCost;
         }
       });
       
-      editingItems.transport.forEach(transport => {
+      selectedItems.transport.forEach(transport => {
         total += transport.pricePerHour * 8; // Assuming 8 hours average
       });
       
-      if (editingItems.stay) {
-        total += editingItems.stay.pricePerNight * 2; // Assuming 2 nights
+      if (selectedItems.stay) {
+        total += selectedItems.stay.pricePerNight * 2; // Assuming 2 nights
       }
+      
+      total += extras;
       
       setBudget(prev => ({ ...prev, totalAmount: total }));
     };
 
     calculateTotal();
-  }, [editingItems, budget.guestCount]);
+  }, [selectedItems, budget.guestCount, extras]);
 
   const handleSelect = (type: string, item: any) => {
-    setEditingItems(prev => ({
+    setSelectedItems(prev => ({
       ...prev,
       [type]: type === 'stay' ? item : [...(prev[type as keyof typeof prev] as any[]), item]
     }));
@@ -190,9 +207,9 @@ const NewBudget: React.FC = () => {
 
   const handleEdit = (type: string, index: number, updated: any) => {
     if (type === 'stay') {
-      setEditingItems(prev => ({ ...prev, stay: updated }));
+      setSelectedItems(prev => ({ ...prev, stay: updated }));
     } else {
-      setEditingItems(prev => ({
+      setSelectedItems(prev => ({
         ...prev,
         [type]: (prev[type as keyof typeof prev] as any[]).map((item, i) => i === index ? updated : item)
       }));
@@ -201,250 +218,33 @@ const NewBudget: React.FC = () => {
 
   const handleRemove = (type: string, index?: number) => {
     if (type === 'stay') {
-      setEditingItems(prev => ({ ...prev, stay: undefined }));
+      setSelectedItems(prev => ({ ...prev, stay: undefined }));
     } else {
-      setEditingItems(prev => ({
+      setSelectedItems(prev => ({
         ...prev,
         [type]: (prev[type as keyof typeof prev] as any[]).filter((_, i) => i !== index)
       }));
     }
   };
 
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const handleSaveBudget = () => {
-    console.log('Saving budget:', budget);
-    console.log('Selected items:', editingItems);
+    const finalBudget = {
+      ...budget,
+      selectedMeals: selectedItems.meals,
+      selectedActivities: selectedItems.activities,
+      selectedTransport: selectedItems.transport,
+      selectedStay: selectedItems.stay,
+      extras,
+      totalAmount: budget.totalAmount
+    };
+    
+    console.log('Saving budget:', finalBudget);
     // Here you would send the data to your backend
     navigate('/budgets');
-  };
-
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700">Client Name</label>
-                <Input
-                  value={budget.clientName || ''}
-                  onChange={(e) => setBudget(prev => ({ ...prev, clientName: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700">Event Date</label>
-                <Input
-                  type="date"
-                  value={budget.eventDate || ''}
-                  onChange={(e) => setBudget(prev => ({ ...prev, eventDate: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700">Guest Count</label>
-                <Input
-                  type="number"
-                  value={budget.guestCount || ''}
-                  onChange={(e) => setBudget(prev => ({ ...prev, guestCount: Number(e.target.value) }))}
-                  className="mt-1"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 1:
-        return (
-          <div className="space-y-6">
-            <MealsTemplate
-              items={templates.meals}
-              onSelect={(item) => handleSelect('meals', item)}
-            />
-            
-            {editingItems.meals.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-900">Selected Meals</h3>
-                {editingItems.meals.map((meal, index) => (
-                  <MealsTemplate
-                    key={index}
-                    items={[]}
-                    editable
-                    editableItem={meal}
-                    onChange={(updated) => handleEdit('meals', index, updated)}
-                    onRemove={() => handleRemove('meals', index)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <ActivitiesTemplate
-              items={templates.activities}
-              onSelect={(item) => handleSelect('activities', item)}
-            />
-            
-            {editingItems.activities.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-900">Selected Activities</h3>
-                {editingItems.activities.map((activity, index) => (
-                  <ActivitiesTemplate
-                    key={index}
-                    items={[]}
-                    editable
-                    editableItem={activity}
-                    onChange={(updated) => handleEdit('activities', index, updated)}
-                    onRemove={() => handleRemove('activities', index)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <TransportTemplate
-              items={templates.transport}
-              onSelect={(item) => handleSelect('transport', item)}
-            />
-            
-            {editingItems.transport.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-900">Selected Transport</h3>
-                {editingItems.transport.map((transport, index) => (
-                  <TransportTemplate
-                    key={index}
-                    items={[]}
-                    editable
-                    editableItem={transport}
-                    onChange={(updated) => handleEdit('transport', index, updated)}
-                    onRemove={() => handleRemove('transport', index)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <StayTemplate
-              items={templates.stay}
-              onSelect={(item) => handleSelect('stay', item)}
-            />
-            
-            {editingItems.stay && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-900">Selected Stay</h3>
-                <StayTemplate
-                  items={[]}
-                  editable
-                  editableItem={editingItems.stay}
-                  onChange={(updated) => handleEdit('stay', 0, updated)}
-                  onRemove={() => handleRemove('stay')}
-                />
-              </div>
-            )}
-          </div>
-        );
-
-      case 5:
-        return (
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle>Budget Review</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-slate-700">Client:</span>
-                  <span className="ml-2">{budget.clientName}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-slate-700">Date:</span>
-                  <span className="ml-2">{budget.eventDate}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-slate-700">Guests:</span>
-                  <span className="ml-2">{budget.guestCount}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-slate-700">Total:</span>
-                  <span className="ml-2 text-lg font-bold text-slate-900">${budget.totalAmount}</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {editingItems.meals.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-slate-700 mb-2">Meals ({editingItems.meals.length})</h4>
-                    <ul className="text-sm text-slate-600 space-y-1">
-                      {editingItems.meals.map((meal, index) => (
-                        <li key={index}>• {meal.name} - ${meal.pricePerPerson}/person</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {editingItems.activities.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-slate-700 mb-2">Activities ({editingItems.activities.length})</h4>
-                    <ul className="text-sm text-slate-600 space-y-1">
-                      {editingItems.activities.map((activity, index) => (
-                        <li key={index}>• {activity.name} - ${activity.basePrice}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {editingItems.transport.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-slate-700 mb-2">Transport ({editingItems.transport.length})</h4>
-                    <ul className="text-sm text-slate-600 space-y-1">
-                      {editingItems.transport.map((transport, index) => (
-                        <li key={index}>• {transport.name} - ${transport.pricePerHour}/hour</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {editingItems.stay && (
-                  <div>
-                    <h4 className="font-medium text-slate-700 mb-2">Stay</h4>
-                    <ul className="text-sm text-slate-600">
-                      <li>• {editingItems.stay.name} - ${editingItems.stay.pricePerNight}/night</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      default:
-        return null;
-    }
   };
 
   return (
@@ -467,63 +267,251 @@ const NewBudget: React.FC = () => {
           </div>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-4">
-          {steps.map((step, index) => (
-            <div key={step} className="flex items-center">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                index <= currentStep ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-600'
-              }`}>
-                {index < currentStep ? <Check className="h-4 w-4" /> : index + 1}
+        {/* Basic Information */}
+        <Collapsible open={openSections.basicInfo} onOpenChange={() => toggleSection('basicInfo')}>
+          <Card className="border-slate-200">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50">
+                <CardTitle className="flex items-center justify-between">
+                  Basic Information
+                  {openSections.basicInfo ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Client Name</label>
+                    <Input
+                      value={budget.clientName || ''}
+                      onChange={(e) => setBudget(prev => ({ ...prev, clientName: e.target.value }))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Event Date</label>
+                    <Input
+                      type="date"
+                      value={budget.eventDate || ''}
+                      onChange={(e) => setBudget(prev => ({ ...prev, eventDate: e.target.value }))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Guest Count</label>
+                    <Input
+                      type="number"
+                      value={budget.guestCount || ''}
+                      onChange={(e) => setBudget(prev => ({ ...prev, guestCount: Number(e.target.value) }))}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Meals Section */}
+        <Collapsible open={openSections.meals} onOpenChange={() => toggleSection('meals')}>
+          <Card className="border-slate-200">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50">
+                <CardTitle className="flex items-center justify-between">
+                  Meals ({selectedItems.meals.length})
+                  {openSections.meals ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                <MealsTemplate
+                  items={templates.meals}
+                  onSelect={(item) => handleSelect('meals', item)}
+                />
+                
+                {selectedItems.meals.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Selected Meals</h3>
+                    {selectedItems.meals.map((meal, index) => (
+                      <MealsTemplate
+                        key={index}
+                        items={[]}
+                        editable
+                        editableItem={meal}
+                        onChange={(updated) => handleEdit('meals', index, updated)}
+                        onRemove={() => handleRemove('meals', index)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Activities Section */}
+        <Collapsible open={openSections.activities} onOpenChange={() => toggleSection('activities')}>
+          <Card className="border-slate-200">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50">
+                <CardTitle className="flex items-center justify-between">
+                  Activities ({selectedItems.activities.length})
+                  {openSections.activities ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                <ActivitiesTemplate
+                  items={templates.activities}
+                  onSelect={(item) => handleSelect('activities', item)}
+                />
+                
+                {selectedItems.activities.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Selected Activities</h3>
+                    {selectedItems.activities.map((activity, index) => (
+                      <ActivitiesTemplate
+                        key={index}
+                        items={[]}
+                        editable
+                        editableItem={activity}
+                        onChange={(updated) => handleEdit('activities', index, updated)}
+                        onRemove={() => handleRemove('activities', index)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Transport Section */}
+        <Collapsible open={openSections.transport} onOpenChange={() => toggleSection('transport')}>
+          <Card className="border-slate-200">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50">
+                <CardTitle className="flex items-center justify-between">
+                  Transport ({selectedItems.transport.length})
+                  {openSections.transport ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                <TransportTemplate
+                  items={templates.transport}
+                  onSelect={(item) => handleSelect('transport', item)}
+                />
+                
+                {selectedItems.transport.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Selected Transport</h3>
+                    {selectedItems.transport.map((transport, index) => (
+                      <TransportTemplate
+                        key={index}
+                        items={[]}
+                        editable
+                        editableItem={transport}
+                        onChange={(updated) => handleEdit('transport', index, updated)}
+                        onRemove={() => handleRemove('transport', index)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Stay Section */}
+        <Collapsible open={openSections.stay} onOpenChange={() => toggleSection('stay')}>
+          <Card className="border-slate-200">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50">
+                <CardTitle className="flex items-center justify-between">
+                  Stay {selectedItems.stay && '(1)'}
+                  {openSections.stay ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                <StayTemplate
+                  items={templates.stay}
+                  onSelect={(item) => handleSelect('stay', item)}
+                />
+                
+                {selectedItems.stay && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Selected Stay</h3>
+                    <StayTemplate
+                      items={[]}
+                      editable
+                      editableItem={selectedItems.stay}
+                      onChange={(updated) => handleEdit('stay', 0, updated)}
+                      onRemove={() => handleRemove('stay')}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Extras Section */}
+        <Collapsible open={openSections.extras} onOpenChange={() => toggleSection('extras')}>
+          <Card className="border-slate-200">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50">
+                <CardTitle className="flex items-center justify-between">
+                  Extras
+                  {openSections.extras ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Additional Costs</label>
+                  <Input
+                    type="number"
+                    value={extras}
+                    onChange={(e) => setExtras(Number(e.target.value) || 0)}
+                    className="mt-1"
+                    placeholder="Enter any additional costs..."
+                  />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Total Amount */}
+        <Card className="border-slate-200 bg-slate-50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <DollarSign className="h-6 w-6 text-slate-600 mr-2" />
+                <span className="text-lg font-semibold text-slate-700">Total Amount</span>
               </div>
-              <span className={`ml-2 text-sm font-medium ${
-                index <= currentStep ? 'text-slate-900' : 'text-slate-500'
-              }`}>
-                {step}
-              </span>
-              {index < steps.length - 1 && (
-                <div className={`w-12 h-px mx-4 ${
-                  index < currentStep ? 'bg-slate-800' : 'bg-slate-200'
-                }`} />
-              )}
+              <span className="text-2xl font-bold text-slate-900">${budget.totalAmount?.toLocaleString()}</span>
             </div>
-          ))}
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Step Content */}
-        <div className="min-h-96">
-          {renderStepContent()}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between">
+        {/* Save Button */}
+        <div className="flex justify-end">
           <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className="flex items-center"
+            onClick={handleSaveBudget}
+            className="bg-slate-800 hover:bg-slate-700 px-8 py-3"
+            size="lg"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Previous
+            Save Budget
           </Button>
-
-          {currentStep === steps.length - 1 ? (
-            <Button
-              onClick={handleSaveBudget}
-              className="bg-slate-800 hover:bg-slate-700 flex items-center"
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Save Budget
-            </Button>
-          ) : (
-            <Button
-              onClick={nextStep}
-              className="bg-slate-800 hover:bg-slate-700 flex items-center"
-            >
-              Next
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          )}
         </div>
       </div>
     </Layout>
