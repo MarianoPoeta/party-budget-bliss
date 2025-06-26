@@ -1,16 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Minus, DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import MealsTemplate from '../components/MealsTemplate';
 import ActivitiesTemplate from '../components/ActivitiesTemplate';
 import TransportTemplate from '../components/TransportTemplate';
 import StayTemplate from '../components/StayTemplate';
+import BasicInfoSection from '../components/budget/BasicInfoSection';
+import BudgetSection from '../components/budget/BudgetSection';
+import ExtrasSection from '../components/budget/ExtrasSection';
+import TotalAmountCard from '../components/budget/TotalAmountCard';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
+import { useBudgetCalculation } from '../hooks/useBudgetCalculation';
+import { useBudgetSections } from '../hooks/useBudgetSections';
 import { 
   MealTemplate, 
   ActivityTemplate, 
@@ -119,6 +122,8 @@ const mockStay: StayTemplateType[] = [
 
 const NewBudget: React.FC = () => {
   const navigate = useNavigate();
+  const { openSections, toggleSection } = useBudgetSections();
+  
   const [budget, setBudget] = useState<Partial<NewBudgetType>>({
     clientName: '',
     eventDate: '',
@@ -149,54 +154,15 @@ const NewBudget: React.FC = () => {
   });
 
   const [extras, setExtras] = useState<number>(0);
-  
-  const [openSections, setOpenSections] = useState<{
-    basicInfo: boolean;
-    meals: boolean;
-    activities: boolean;
-    transport: boolean;
-    stay: boolean;
-    extras: boolean;
-  }>({
-    basicInfo: true,
-    meals: true,
-    activities: true,
-    transport: true,
-    stay: true,
-    extras: true
+
+  const totalAmount = useBudgetCalculation({
+    selectedMeals: selectedItems.meals,
+    selectedActivities: selectedItems.activities,
+    selectedTransport: selectedItems.transport,
+    selectedStay: selectedItems.stay,
+    guestCount: budget.guestCount || 0,
+    extras
   });
-
-  useEffect(() => {
-    // Calculate total amount whenever items change
-    const calculateTotal = () => {
-      let total = 0;
-      
-      selectedItems.meals.forEach(meal => {
-        total += meal.pricePerPerson * (budget.guestCount || 0);
-      });
-      
-      selectedItems.activities.forEach(activity => {
-        total += activity.basePrice;
-        if (activity.transportRequired && activity.transportCost) {
-          total += activity.transportCost;
-        }
-      });
-      
-      selectedItems.transport.forEach(transport => {
-        total += transport.pricePerHour * 8; // Assuming 8 hours average
-      });
-      
-      if (selectedItems.stay) {
-        total += selectedItems.stay.pricePerNight * 2; // Assuming 2 nights
-      }
-      
-      total += extras;
-      
-      setBudget(prev => ({ ...prev, totalAmount: total }));
-    };
-
-    calculateTotal();
-  }, [selectedItems, budget.guestCount, extras]);
 
   const handleSelect = (type: string, item: any) => {
     setSelectedItems(prev => ({
@@ -227,10 +193,6 @@ const NewBudget: React.FC = () => {
     }
   };
 
-  const toggleSection = (section: keyof typeof openSections) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
   const handleSaveBudget = () => {
     const finalBudget = {
       ...budget,
@@ -239,7 +201,7 @@ const NewBudget: React.FC = () => {
       selectedTransport: selectedItems.transport,
       selectedStay: selectedItems.stay,
       extras,
-      totalAmount: budget.totalAmount
+      totalAmount
     };
     
     console.log('Saving budget:', finalBudget);
@@ -268,240 +230,140 @@ const NewBudget: React.FC = () => {
         </div>
 
         {/* Basic Information */}
-        <Collapsible open={openSections.basicInfo} onOpenChange={() => toggleSection('basicInfo')}>
-          <Card className="border-slate-200">
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50">
-                <CardTitle className="flex items-center justify-between">
-                  Basic Information
-                  {openSections.basicInfo ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Client Name</label>
-                    <Input
-                      value={budget.clientName || ''}
-                      onChange={(e) => setBudget(prev => ({ ...prev, clientName: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Event Date</label>
-                    <Input
-                      type="date"
-                      value={budget.eventDate || ''}
-                      onChange={(e) => setBudget(prev => ({ ...prev, eventDate: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Guest Count</label>
-                    <Input
-                      type="number"
-                      value={budget.guestCount || ''}
-                      onChange={(e) => setBudget(prev => ({ ...prev, guestCount: Number(e.target.value) }))}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+        <BasicInfoSection
+          clientName={budget.clientName || ''}
+          eventDate={budget.eventDate || ''}
+          guestCount={budget.guestCount || 0}
+          isOpen={openSections.basicInfo}
+          onToggle={() => toggleSection('basicInfo')}
+          onClientNameChange={(value) => setBudget(prev => ({ ...prev, clientName: value }))}
+          onEventDateChange={(value) => setBudget(prev => ({ ...prev, eventDate: value }))}
+          onGuestCountChange={(value) => setBudget(prev => ({ ...prev, guestCount: value }))}
+        />
 
         {/* Meals Section */}
-        <Collapsible open={openSections.meals} onOpenChange={() => toggleSection('meals')}>
-          <Card className="border-slate-200">
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50">
-                <CardTitle className="flex items-center justify-between">
-                  Meals ({selectedItems.meals.length})
-                  {openSections.meals ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-6">
+        <BudgetSection
+          title="Meals"
+          count={selectedItems.meals.length}
+          isOpen={openSections.meals}
+          onToggle={() => toggleSection('meals')}
+        >
+          <MealsTemplate
+            items={templates.meals}
+            onSelect={(item) => handleSelect('meals', item)}
+          />
+          
+          {selectedItems.meals.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900">Selected Meals</h3>
+              {selectedItems.meals.map((meal, index) => (
                 <MealsTemplate
-                  items={templates.meals}
-                  onSelect={(item) => handleSelect('meals', item)}
+                  key={index}
+                  items={[]}
+                  editable
+                  editableItem={meal}
+                  onChange={(updated) => handleEdit('meals', index, updated)}
+                  onRemove={() => handleRemove('meals', index)}
                 />
-                
-                {selectedItems.meals.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Selected Meals</h3>
-                    {selectedItems.meals.map((meal, index) => (
-                      <MealsTemplate
-                        key={index}
-                        items={[]}
-                        editable
-                        editableItem={meal}
-                        onChange={(updated) => handleEdit('meals', index, updated)}
-                        onRemove={() => handleRemove('meals', index)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+              ))}
+            </div>
+          )}
+        </BudgetSection>
 
         {/* Activities Section */}
-        <Collapsible open={openSections.activities} onOpenChange={() => toggleSection('activities')}>
-          <Card className="border-slate-200">
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50">
-                <CardTitle className="flex items-center justify-between">
-                  Activities ({selectedItems.activities.length})
-                  {openSections.activities ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-6">
+        <BudgetSection
+          title="Activities"
+          count={selectedItems.activities.length}
+          isOpen={openSections.activities}
+          onToggle={() => toggleSection('activities')}
+        >
+          <ActivitiesTemplate
+            items={templates.activities}
+            onSelect={(item) => handleSelect('activities', item)}
+          />
+          
+          {selectedItems.activities.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900">Selected Activities</h3>
+              {selectedItems.activities.map((activity, index) => (
                 <ActivitiesTemplate
-                  items={templates.activities}
-                  onSelect={(item) => handleSelect('activities', item)}
+                  key={index}
+                  items={[]}
+                  editable
+                  editableItem={activity}
+                  onChange={(updated) => handleEdit('activities', index, updated)}
+                  onRemove={() => handleRemove('activities', index)}
                 />
-                
-                {selectedItems.activities.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Selected Activities</h3>
-                    {selectedItems.activities.map((activity, index) => (
-                      <ActivitiesTemplate
-                        key={index}
-                        items={[]}
-                        editable
-                        editableItem={activity}
-                        onChange={(updated) => handleEdit('activities', index, updated)}
-                        onRemove={() => handleRemove('activities', index)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+              ))}
+            </div>
+          )}
+        </BudgetSection>
 
         {/* Transport Section */}
-        <Collapsible open={openSections.transport} onOpenChange={() => toggleSection('transport')}>
-          <Card className="border-slate-200">
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50">
-                <CardTitle className="flex items-center justify-between">
-                  Transport ({selectedItems.transport.length})
-                  {openSections.transport ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-6">
+        <BudgetSection
+          title="Transport"
+          count={selectedItems.transport.length}
+          isOpen={openSections.transport}
+          onToggle={() => toggleSection('transport')}
+        >
+          <TransportTemplate
+            items={templates.transport}
+            onSelect={(item) => handleSelect('transport', item)}
+          />
+          
+          {selectedItems.transport.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900">Selected Transport</h3>
+              {selectedItems.transport.map((transport, index) => (
                 <TransportTemplate
-                  items={templates.transport}
-                  onSelect={(item) => handleSelect('transport', item)}
+                  key={index}
+                  items={[]}
+                  editable
+                  editableItem={transport}
+                  onChange={(updated) => handleEdit('transport', index, updated)}
+                  onRemove={() => handleRemove('transport', index)}
                 />
-                
-                {selectedItems.transport.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Selected Transport</h3>
-                    {selectedItems.transport.map((transport, index) => (
-                      <TransportTemplate
-                        key={index}
-                        items={[]}
-                        editable
-                        editableItem={transport}
-                        onChange={(updated) => handleEdit('transport', index, updated)}
-                        onRemove={() => handleRemove('transport', index)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+              ))}
+            </div>
+          )}
+        </BudgetSection>
 
         {/* Stay Section */}
-        <Collapsible open={openSections.stay} onOpenChange={() => toggleSection('stay')}>
-          <Card className="border-slate-200">
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50">
-                <CardTitle className="flex items-center justify-between">
-                  Stay {selectedItems.stay && '(1)'}
-                  {openSections.stay ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-6">
-                <StayTemplate
-                  items={templates.stay}
-                  onSelect={(item) => handleSelect('stay', item)}
-                />
-                
-                {selectedItems.stay && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Selected Stay</h3>
-                    <StayTemplate
-                      items={[]}
-                      editable
-                      editableItem={selectedItems.stay}
-                      onChange={(updated) => handleEdit('stay', 0, updated)}
-                      onRemove={() => handleRemove('stay')}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+        <BudgetSection
+          title="Stay"
+          count={selectedItems.stay ? 1 : 0}
+          isOpen={openSections.stay}
+          onToggle={() => toggleSection('stay')}
+        >
+          <StayTemplate
+            items={templates.stay}
+            onSelect={(item) => handleSelect('stay', item)}
+          />
+          
+          {selectedItems.stay && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900">Selected Stay</h3>
+              <StayTemplate
+                items={[]}
+                editable
+                editableItem={selectedItems.stay}
+                onChange={(updated) => handleEdit('stay', 0, updated)}
+                onRemove={() => handleRemove('stay')}
+              />
+            </div>
+          )}
+        </BudgetSection>
 
         {/* Extras Section */}
-        <Collapsible open={openSections.extras} onOpenChange={() => toggleSection('extras')}>
-          <Card className="border-slate-200">
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50">
-                <CardTitle className="flex items-center justify-between">
-                  Extras
-                  {openSections.extras ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent>
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Additional Costs</label>
-                  <Input
-                    type="number"
-                    value={extras}
-                    onChange={(e) => setExtras(Number(e.target.value) || 0)}
-                    className="mt-1"
-                    placeholder="Enter any additional costs..."
-                  />
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+        <ExtrasSection
+          extras={extras}
+          isOpen={openSections.extras}
+          onToggle={() => toggleSection('extras')}
+          onExtrasChange={setExtras}
+        />
 
         {/* Total Amount */}
-        <Card className="border-slate-200 bg-slate-50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <DollarSign className="h-6 w-6 text-slate-600 mr-2" />
-                <span className="text-lg font-semibold text-slate-700">Total Amount</span>
-              </div>
-              <span className="text-2xl font-bold text-slate-900">${budget.totalAmount?.toLocaleString()}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <TotalAmountCard totalAmount={totalAmount} />
 
         {/* Save Button */}
         <div className="flex justify-end">
