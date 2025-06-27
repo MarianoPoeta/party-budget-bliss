@@ -1,41 +1,36 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import Budgets from './pages/Budgets';
+import NewBudget from './pages/NewBudget';
+import BudgetDetails from './pages/BudgetDetails';
+import Activities from './pages/Activities';
+import Accommodations from './pages/Accommodations';
+import Menus from './pages/Menus';
+import Finances from './pages/Finances';
+import NotFound from './pages/NotFound';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import Budgets from "./pages/Budgets";
-import NewBudget from "./pages/NewBudget";
-import BudgetDetails from "./pages/BudgetDetails";
-import Activities from "./pages/Activities";
-import Accommodations from "./pages/Accommodations";
-import Menus from "./pages/Menus";
-import Finances from "./pages/Finances";
-import NotFound from "./pages/NotFound";
+import EnhanchedBudgets from './pages/EnhancedBudgets';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/budgets" element={<Budgets />} />
-          <Route path="/budgets/new" element={<NewBudget />} />
-          <Route path="/budgets/:id" element={<BudgetDetails />} />
-          <Route path="/activities" element={<Activities />} />
-          <Route path="/accommodations" element={<Accommodations />} />
-          <Route path="/menus" element={<Menus />} />
-          <Route path="/finances" element={<Finances />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/budgets/enhanced" element={<EnhanchedBudgets />} />
+        <Route path="/budgets/new" element={<NewBudget />} />
+        <Route path="/budgets/:id" element={<BudgetDetails />} />
+        <Route path="/activities" element={<Activities />} />
+        <Route path="/accommodations" element={<Accommodations />} />
+        <Route path="/menus" element={<Menus />} />
+        <Route path="/finances" element={<Finances />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
 export default App;
