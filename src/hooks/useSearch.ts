@@ -1,48 +1,50 @@
+import { useState, useMemo, useCallback } from 'react';
 
-import { useState, useMemo } from 'react';
-
-export const useSearch = <T>(items: T[], searchFields: (keyof T)[]) => {
+export const useSearch = <T extends Record<string, any>>(
+  items: T[] = [],
+  searchableFields: (keyof T)[] = []
+) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
 
   const filteredItems = useMemo(() => {
-    let filtered = items;
+    if (!Array.isArray(items)) return [];
 
-    // Apply text search
-    if (searchTerm) {
-      filtered = filtered.filter(item =>
-        searchFields.some(field => {
-          const value = item[field];
-          return value && 
-            String(value).toLowerCase().includes(searchTerm.toLowerCase());
-        })
-      );
-    }
+    return items.filter(item => {
+      // Search filter
+      const matchesSearch = !searchTerm.trim() || searchableFields.some(field => {
+        const value = item[field];
+        if (Array.isArray(value)) {
+          return value.some(v => 
+            String(v).toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+        return String(value || '').toLowerCase().includes(searchTerm.toLowerCase());
+      });
 
-    // Apply filters
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== '') {
-        filtered = filtered.filter(item => {
-          const itemValue = item[key as keyof T];
-          if (Array.isArray(value)) {
-            return value.includes(itemValue);
-          }
-          return itemValue === value;
-        });
-      }
+      // Other filters
+      const matchesFilters = Object.entries(filters).every(([key, filterValue]) => {
+        if (filterValue === null || filterValue === undefined || filterValue === '') {
+          return true;
+        }
+        return item[key] === filterValue;
+      });
+
+      return matchesSearch && matchesFilters;
     });
+  }, [items, searchTerm, filters, searchableFields]);
 
-    return filtered;
-  }, [items, searchTerm, filters, searchFields]);
+  const updateFilter = useCallback((key: string, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  }, []);
 
-  const updateFilter = (key: string, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({});
+  const clearFilters = useCallback(() => {
     setSearchTerm('');
-  };
+    setFilters({});
+  }, []);
 
   return {
     searchTerm,

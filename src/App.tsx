@@ -11,7 +11,7 @@ import Menus from './pages/Menus';
 import Finances from './pages/Finances';
 import NotFound from './pages/NotFound';
 
-import EnhanchedBudgets from './pages/EnhancedBudgets';
+import EnhancedBudgets from './pages/EnhancedBudgets';
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/budgets" element={<Budgets />} />
-        <Route path="/budgets/enhanced" element={<EnhanchedBudgets />} />
+        <Route path="/budgets/enhanced" element={<EnhancedBudgets />} />
         <Route path="/budgets/new" element={<NewBudget />} />
         <Route path="/budgets/:id" element={<BudgetDetails />} />
         <Route path="/activities" element={<Activities />} />
