@@ -12,6 +12,7 @@ import { useBudgetWorkflow } from '../../hooks/useBudgetWorkflow';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
 import { useBudgetCalculation } from '../../hooks/useBudgetCalculation';
 import { useTemplates } from '../../hooks/useTemplates';
+import { MealTemplate, ActivityTemplate, TransportTemplate, StayTemplate } from '../../types/Budget';
 
 interface EnhancedBudgetFormProps {
   onSave: (budget: any) => void;
@@ -71,6 +72,23 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
       item.name.toLowerCase().includes(searchTerm) ||
       item.description.toLowerCase().includes(searchTerm)
     );
+  };
+
+  // Type guard functions
+  const isMealTemplate = (template: any): template is MealTemplate => {
+    return template && 'pricePerPerson' in template;
+  };
+
+  const isActivityTemplate = (template: any): template is ActivityTemplate => {
+    return template && 'basePrice' in template;
+  };
+
+  const isTransportTemplate = (template: any): template is TransportTemplate => {
+    return template && 'pricePerHour' in template;
+  };
+
+  const isStayTemplate = (template: any): template is StayTemplate => {
+    return template && 'pricePerNight' in template;
   };
 
   return (
@@ -193,7 +211,7 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
                       <p className="text-sm text-slate-600 mb-3">{meal.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-green-600">
-                          ${meal.pricePerPerson}/person
+                          ${isMealTemplate(meal) ? meal.pricePerPerson : 0}/person
                         </span>
                         <Button
                           size="sm"
@@ -214,29 +232,33 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
                 <div className="border-t pt-4">
                   <h3 className="font-semibold mb-3">Selected Meals</h3>
                   <div className="space-y-2">
-                    {budget.selectedMeals.map((item, index) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{item.template.name}</div>
-                          <div className="text-sm text-slate-600">
-                            ${item.template.pricePerPerson}/person × {budget.guestCount} guests = 
-                            ${(item.template.pricePerPerson * (budget.guestCount || 0)).toLocaleString()}
+                    {budget.selectedMeals.map((item, index) => {
+                      const meal = item.template;
+                      const pricePerPerson = isMealTemplate(meal) ? meal.pricePerPerson : 0;
+                      return (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div className="flex-1">
+                            <div className="font-medium">{meal.name}</div>
+                            <div className="text-sm text-slate-600">
+                              ${pricePerPerson}/person × {budget.guestCount} guests = 
+                              ${(pricePerPerson * (budget.guestCount || 0)).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline">
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => removeItem('meals', item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline">
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeItem('meals', item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -268,14 +290,14 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-semibold">{activity.name}</h4>
-                        {activity.transportRequired && (
+                        {isActivityTemplate(activity) && activity.transportRequired && (
                           <Badge variant="outline" className="text-xs">Transport Required</Badge>
                         )}
                       </div>
                       <p className="text-sm text-slate-600 mb-3">{activity.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-green-600">
-                          ${activity.basePrice}
+                          ${isActivityTemplate(activity) ? activity.basePrice : 0}
                         </span>
                         <Button
                           size="sm"
@@ -296,45 +318,52 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
                 <div className="border-t pt-4">
                   <h3 className="font-semibold mb-3">Selected Activities</h3>
                   <div className="space-y-3">
-                    {budget.selectedActivities.map((item, index) => (
-                      <div key={item.id} className="p-4 bg-slate-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="font-medium">{item.template.name}</div>
-                            <div className="text-sm text-slate-600">
-                              Base price: ${item.template.basePrice}
+                    {budget.selectedActivities.map((item, index) => {
+                      const activity = item.template;
+                      const basePrice = isActivityTemplate(activity) ? activity.basePrice : 0;
+                      const transportRequired = isActivityTemplate(activity) ? activity.transportRequired : false;
+                      const transportCost = isActivityTemplate(activity) ? activity.transportCost || 0 : 0;
+
+                      return (
+                        <div key={item.id} className="p-4 bg-slate-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="font-medium">{activity.name}</div>
+                              <div className="text-sm text-slate-600">
+                                Base price: ${basePrice}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline">
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => removeItem('activities', item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => removeItem('activities', item.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          
+                          {transportRequired && (
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`transport-${item.id}`}
+                                checked={item.includeTransport || false}
+                                onCheckedChange={(checked) => 
+                                  updateItem('activities', item.id, { includeTransport: checked as boolean })
+                                }
+                              />
+                              <label htmlFor={`transport-${item.id}`} className="text-sm">
+                                Include Transport? (+${transportCost})
+                              </label>
+                            </div>
+                          )}
                         </div>
-                        
-                        {item.template.transportRequired && (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`transport-${item.id}`}
-                              checked={item.includeTransport || false}
-                              onCheckedChange={(checked) => 
-                                updateItem('activities', item.id, { includeTransport: checked as boolean })
-                              }
-                            />
-                            <label htmlFor={`transport-${item.id}`} className="text-sm">
-                              Include Transport? (+${item.template.transportCost || 0})
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
