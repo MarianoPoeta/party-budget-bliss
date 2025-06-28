@@ -1,31 +1,88 @@
 
-import React from 'react';
-import { Calendar, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarDays, DollarSign, Users, TrendingUp, Plus, ArrowRight } from 'lucide-react';
 import Layout from '../components/Layout';
-import StatCard from '../components/StatCard';
-import BudgetCard, { BudgetStatus } from '../components/BudgetCard';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useBudgetsData } from '../hooks/useBudgetsData';
-import { Alert, AlertDescription } from '../components/ui/alert';
 
 const Dashboard = () => {
   const { budgets, isLoading, error } = useBudgetsData();
 
-  // Calculate stats from actual data
-  const stats = React.useMemo(() => {
+  const dashboardStats = useMemo(() => {
     const totalRevenue = budgets
       .filter(b => b.status === 'paid')
       .reduce((sum, b) => sum + b.totalAmount, 0);
     
-    const activeBudgets = budgets.filter(b => b.status === 'pending').length;
+    const pendingRevenue = budgets
+      .filter(b => b.status === 'pending')
+      .reduce((sum, b) => sum + b.totalAmount, 0);
+    
     const totalGuests = budgets.reduce((sum, b) => sum + b.guestCount, 0);
-    const conversionRate = budgets.length > 0 
-      ? Math.round((budgets.filter(b => b.status === 'paid').length / budgets.length) * 100)
-      : 0;
+    
+    const upcomingEvents = budgets.filter(b => {
+      const eventDate = new Date(b.eventDate);
+      const today = new Date();
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+      return eventDate >= today && eventDate <= nextMonth;
+    }).length;
 
-    return { totalRevenue, activeBudgets, totalGuests, conversionRate };
+    return {
+      totalRevenue,
+      pendingRevenue,
+      totalGuests,
+      upcomingEvents,
+      totalBudgets: budgets.length,
+      paidBudgets: budgets.filter(b => b.status === 'paid').length,
+      pendingBudgets: budgets.filter(b => b.status === 'pending').length
+    };
   }, [budgets]);
+
+  const recentBudgets = useMemo(() => {
+    return budgets
+      .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
+      .slice(0, 5);
+  }, [budgets]);
+
+  const upcomingEvents = useMemo(() => {
+    const today = new Date();
+    return budgets
+      .filter(b => new Date(b.eventDate) >= today)
+      .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+      .slice(0, 5);
+  }, [budgets]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      paid: 'bg-green-100 text-green-800 border-green-200',
+      canceled: 'bg-red-100 text-red-800 border-red-200'
+    };
+    
+    return (
+      <Badge className={variants[status as keyof typeof variants]} variant="outline">
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -37,115 +94,254 @@ const Dashboard = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">Dashboard Error</CardTitle>
+              <CardDescription>{error}</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="space-y-8">
-        {/* Error Display */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's what's happening with your bachelor parties.</p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Revenue"
-            value={`$${stats.totalRevenue.toLocaleString()}`}
-            icon={DollarSign}
-            trend={{ value: 12, label: 'from last month' }}
-            color="green"
-          />
-          <StatCard
-            title="Active Budgets"
-            value={stats.activeBudgets.toString()}
-            icon={Calendar}
-            trend={{ value: 25, label: 'from last month' }}
-            color="blue"
-          />
-          <StatCard
-            title="Total Guests"
-            value={stats.totalGuests.toString()}
-            icon={Users}
-            trend={{ value: 8, label: 'from last month' }}
-            color="orange"
-          />
-          <StatCard
-            title="Conversion Rate"
-            value={`${stats.conversionRate}%`}
-            icon={TrendingUp}
-            trend={{ value: -3, label: 'from last month' }}
-            color="red"
-          />
-        </div>
-
-        {/* Recent Budgets */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Budgets</h2>
-            <Link 
-              to="/budgets/enhanced" 
-              className="text-orange-600 hover:text-orange-700 font-medium text-sm"
-            >
-              View all
-            </Link>
+      <div className="space-y-6">
+        {/* Welcome Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+              Welcome to Bachelor Pro
+            </h1>
+            <p className="text-slate-600">
+              Manage your bachelor party events with ease
+            </p>
           </div>
-          
-          {budgets.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-              <p className="font-medium">No budgets yet</p>
-              <p className="text-sm mt-1">Create your first budget to get started</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {budgets.slice(0, 6).map((budget) => (
-                <BudgetCard
-                  key={budget.id}
-                  {...budget}
-                  status={budget.status as BudgetStatus}
-                  eventDate={new Date(budget.eventDate).toLocaleDateString()}
-                  onClick={() => window.location.href = `/budgets/${budget.id}`}
-                />
-              ))}
-            </div>
-          )}
+          <Link to="/budgets/new">
+            <Button className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
+              <Plus className="h-4 w-4" />
+              New Budget
+            </Button>
+          </Link>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">
+                Total Revenue
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {formatCurrency(dashboardStats.totalRevenue)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                From {dashboardStats.paidBudgets} paid events
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">
+                Pending Revenue
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {formatCurrency(dashboardStats.pendingRevenue)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                From {dashboardStats.pendingBudgets} pending events
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">
+                Total Guests
+              </CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {dashboardStats.totalGuests.toLocaleString()}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Across {dashboardStats.totalBudgets} events
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">
+                Upcoming Events
+              </CardTitle>
+              <CalendarDays className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {dashboardStats.upcomingEvents}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Next 30 days
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link 
-            to="/budgets/enhanced"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-left block"
-          >
-            <Calendar className="h-8 w-8 mb-3" />
-            <h3 className="text-lg font-semibold mb-2">Create New Budget</h3>
-            <p className="text-blue-100 text-sm">Start planning a new bachelor party</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link to="/budgets/new" className="group">
+            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
+              <CardContent className="p-6 text-center">
+                <Plus className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
+                <h3 className="font-semibold text-slate-900 mb-1">Create Budget</h3>
+                <p className="text-sm text-slate-600">Start a new event budget</p>
+              </CardContent>
+            </Card>
           </Link>
-          
-          <Link 
-            to="/activities"
-            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 text-left block"
-          >
-            <Users className="h-8 w-8 mb-3" />
-            <h3 className="text-lg font-semibold mb-2">Add Activity</h3>
-            <p className="text-orange-100 text-sm">Create new activities for events</p>
+
+          <Link to="/budgets" className="group">
+            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
+              <CardContent className="p-6 text-center">
+                <CalendarDays className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
+                <h3 className="font-semibold text-slate-900 mb-1">View Budgets</h3>
+                <p className="text-sm text-slate-600">Manage all budgets</p>
+              </CardContent>
+            </Card>
           </Link>
-          
-          <Link 
-            to="/finances"
-            className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 text-left block"
-          >
-            <DollarSign className="h-8 w-8 mb-3" />
-            <h3 className="text-lg font-semibold mb-2">View Finances</h3>
-            <p className="text-green-100 text-sm">Check revenue and expenses</p>
+
+          <Link to="/activities" className="group">
+            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
+              <CardContent className="p-6 text-center">
+                <Users className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
+                <h3 className="font-semibold text-slate-900 mb-1">Activities</h3>
+                <p className="text-sm text-slate-600">Browse activities</p>
+              </CardContent>
+            </Card>
           </Link>
+
+          <Link to="/finances" className="group">
+            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
+              <CardContent className="p-6 text-center">
+                <DollarSign className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
+                <h3 className="font-semibold text-slate-900 mb-1">Finances</h3>
+                <p className="text-sm text-slate-600">Track payments</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Recent Activity and Upcoming Events */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Budgets */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Recent Budgets</CardTitle>
+                <CardDescription>Latest budget activities</CardDescription>
+              </div>
+              <Link to="/budgets">
+                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">
+                  View All
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {recentBudgets.length > 0 ? (
+                <div className="space-y-4">
+                  {recentBudgets.map((budget) => (
+                    <div key={budget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-slate-900 truncate">{budget.clientName}</p>
+                          {getStatusBadge(budget.status)}
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          {formatDate(budget.eventDate)} • {budget.guestCount} guests
+                        </p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-semibold text-slate-900">{formatCurrency(budget.totalAmount)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-slate-500 mb-4">No budgets created yet</p>
+                  <Link to="/budgets/new">
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create First Budget
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Events */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Upcoming Events</CardTitle>
+                <CardDescription>Events scheduled ahead</CardDescription>
+              </div>
+              <Link to="/budgets">
+                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">
+                  View All
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {upcomingEvents.length > 0 ? (
+                <div className="space-y-4">
+                  {upcomingEvents.map((budget) => (
+                    <div key={budget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-slate-900 truncate">{budget.clientName}</p>
+                          {getStatusBadge(budget.status)}
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          {formatDate(budget.eventDate)} • {budget.guestCount} guests
+                        </p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-semibold text-slate-900">{formatCurrency(budget.totalAmount)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CalendarDays className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+                  <p className="text-slate-500 mb-4">No upcoming events</p>
+                  <Link to="/budgets/new">
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Schedule Event
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>
