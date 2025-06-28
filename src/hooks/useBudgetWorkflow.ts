@@ -38,10 +38,11 @@ export const useBudgetWorkflow = (initialBudget?: Partial<EnhancedBudget>) => {
         return { ...prev, selectedStay: newItem };
       }
       
-      const currentItems = prev[`selected${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof prev] as BudgetItem[] || [];
+      const fieldName = `selected${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      const currentItems = (prev as any)[fieldName] as BudgetItem[] || [];
       
       // Check for duplicates
-      const isDuplicate = currentItems.some(item => item.templateId === template.id);
+      const isDuplicate = currentItems.some((item: BudgetItem) => item.templateId === template.id);
       if (isDuplicate) {
         console.warn(`Template ${template.name} is already added`);
         return prev;
@@ -49,14 +50,14 @@ export const useBudgetWorkflow = (initialBudget?: Partial<EnhancedBudget>) => {
 
       return {
         ...prev,
-        [`selected${type.charAt(0).toUpperCase() + type.slice(1)}`]: [...currentItems, newItem]
+        [fieldName]: [...currentItems, newItem]
       };
     });
   }, []);
 
-  const removeItem = useCallback((type: 'meals' | 'activities' | 'transport' | 'stay', itemId?: string, index?: number) => {
-    if (!itemId && index === undefined) {
-      console.error('Either itemId or index must be provided to removeItem');
+  const removeItem = useCallback((type: 'meals' | 'activities' | 'transport' | 'stay', itemId?: string) => {
+    if (!itemId) {
+      console.error('itemId must be provided to removeItem');
       return;
     }
 
@@ -65,20 +66,13 @@ export const useBudgetWorkflow = (initialBudget?: Partial<EnhancedBudget>) => {
         return { ...prev, selectedStay: undefined };
       }
       
-      const currentItems = prev[`selected${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof prev] as BudgetItem[] || [];
-      let updatedItems: BudgetItem[];
-
-      if (itemId) {
-        updatedItems = currentItems.filter(item => item.id !== itemId);
-      } else if (index !== undefined) {
-        updatedItems = currentItems.filter((_, i) => i !== index);
-      } else {
-        return prev;
-      }
+      const fieldName = `selected${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      const currentItems = (prev as any)[fieldName] as BudgetItem[] || [];
+      const updatedItems = currentItems.filter((item: BudgetItem) => item.id !== itemId);
       
       return {
         ...prev,
-        [`selected${type.charAt(0).toUpperCase() + type.slice(1)}`]: updatedItems
+        [fieldName]: updatedItems
       };
     });
   }, []);
@@ -94,14 +88,15 @@ export const useBudgetWorkflow = (initialBudget?: Partial<EnhancedBudget>) => {
         return { ...prev, selectedStay: { ...prev.selectedStay, ...updates } };
       }
       
-      const currentItems = prev[`selected${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof prev] as BudgetItem[] || [];
-      const updatedItems = currentItems.map(item =>
+      const fieldName = `selected${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      const currentItems = (prev as any)[fieldName] as BudgetItem[] || [];
+      const updatedItems = currentItems.map((item: BudgetItem) =>
         item.id === itemId ? { ...item, ...updates } : item
       );
       
       return {
         ...prev,
-        [`selected${type.charAt(0).toUpperCase() + type.slice(1)}`]: updatedItems
+        [fieldName]: updatedItems
       };
     });
   }, []);

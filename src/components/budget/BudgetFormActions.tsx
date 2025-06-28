@@ -1,6 +1,8 @@
 
 import React from 'react';
+import { Save, X } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
 
 interface BudgetFormActionsProps {
   onCancel: () => void;
@@ -14,18 +16,43 @@ const BudgetFormActions: React.FC<BudgetFormActionsProps> = ({
   hasErrors
 }) => {
   return (
-    <div className="flex items-center justify-end gap-4 pt-6 border-t">
-      <Button variant="outline" onClick={onCancel}>
-        Cancel
-      </Button>
-      <Button
-        onClick={onSave}
-        className="bg-green-600 hover:bg-green-700 px-8"
-        disabled={hasErrors}
-      >
-        Save Budget
-      </Button>
-    </div>
+    <Card className="border-t-2 border-slate-200">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-slate-600">
+            {hasErrors ? (
+              <span className="text-red-600 font-medium">
+                Please fix all errors before saving
+              </span>
+            ) : (
+              <span>
+                Review your budget and save when ready
+              </span>
+            )}
+          </div>
+          
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+            
+            <Button
+              onClick={onSave}
+              disabled={hasErrors}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700"
+            >
+              <Save className="h-4 w-4" />
+              Save Budget
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
