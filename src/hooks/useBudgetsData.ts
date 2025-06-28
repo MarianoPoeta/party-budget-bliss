@@ -1,98 +1,117 @@
 
-import { useState, useMemo } from 'react';
-import { BudgetStatus } from '../components/BudgetCard';
+import { useState, useEffect, useCallback } from 'react';
+import { localStorage } from '../utils/localStorage';
 
-// Mock data
-const mockBudgets = [
+export interface Budget {
+  id: string;
+  clientName: string;
+  eventDate: string;
+  totalAmount: number;
+  guestCount: number;
+  status: 'pending' | 'paid' | 'canceled';
+  activities: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const BUDGETS_STORAGE_KEY = 'bachelor-pro-budgets';
+
+const defaultBudgets: Budget[] = [
   {
     id: '1',
     clientName: 'Mike Johnson',
-    eventDate: 'March 15, 2024',
+    eventDate: '2024-03-15',
     totalAmount: 8500,
     guestCount: 12,
-    status: 'pending' as BudgetStatus,
+    status: 'pending',
     activities: ['Go-Karting', 'Strip Club', 'Dinner'],
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-15T10:00:00Z'
   },
   {
     id: '2',
     clientName: 'David Smith',
-    eventDate: 'March 22, 2024',
+    eventDate: '2024-03-22',
     totalAmount: 12000,
     guestCount: 15,
-    status: 'paid' as BudgetStatus,
+    status: 'paid',
     activities: ['Paintball', 'Brewery Tour', 'BBQ', 'Hotel Suite'],
+    createdAt: '2024-01-10T14:30:00Z',
+    updatedAt: '2024-01-20T09:15:00Z'
   },
   {
     id: '3',
     clientName: 'Alex Brown',
-    eventDate: 'March 8, 2024',
+    eventDate: '2024-03-08',
     totalAmount: 6500,
     guestCount: 8,
-    status: 'canceled' as BudgetStatus,
+    status: 'canceled',
     activities: ['Casino Night', 'Steakhouse'],
-  },
-  {
-    id: '4',
-    clientName: 'Chris Wilson',
-    eventDate: 'April 5, 2024',
-    totalAmount: 15000,
-    guestCount: 20,
-    status: 'paid' as BudgetStatus,
-    activities: ['Yacht Charter', 'Fine Dining', 'VIP Club', 'Luxury Hotel'],
-  },
-  {
-    id: '5',
-    clientName: 'Robert Davis',
-    eventDate: 'April 12, 2024',
-    totalAmount: 7800,
-    guestCount: 10,
-    status: 'pending' as BudgetStatus,
-    activities: ['Golf Tournament', 'Steakhouse', 'Sports Bar'],
-  },
+    createdAt: '2024-01-05T16:45:00Z',
+    updatedAt: '2024-01-25T11:20:00Z'
+  }
 ];
 
 export const useBudgetsData = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<BudgetStatus | 'all'>('all');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredBudgets = useMemo(() => {
-    return mockBudgets.filter(budget => {
-      const matchesSearch = budget.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || budget.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchTerm, statusFilter]);
+  // Load budgets from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedBudgets = localStorage.get(BUDGETS_STORAGE_KEY, defaultBudgets);
+      setBudgets(storedBudgets);
+    } catch (err) {
+      setError('Failed to load budgets');
+      setBudgets(defaultBudgets);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const statusCounts = useMemo(() => ({
-    all: mockBudgets.length,
-    pending: mockBudgets.filter(b => b.status === 'pending').length,
-    paid: mockBudgets.filter(b => b.status === 'paid').length,
-    canceled: mockBudgets.filter(b => b.status === 'canceled').length,
-  }), []);
+  // Save budgets to localStorage whenever budgets change
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.set(BUDGETS_STORAGE_KEY, budgets);
+    }
+  }, [budgets, isLoading]);
 
-  const totalRevenue = useMemo(() => 
-    mockBudgets
-      .filter(b => b.status === 'paid')
-      .reduce((sum, b) => sum + b.totalAmount, 0)
-  , []);
+  const addBudget = useCallback((budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newBudget: Budget = {
+      ...budget,
+      id: `budget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-  const pendingRevenue = useMemo(() => 
-    mockBudgets
-      .filter(b => b.status === 'pending')
-      .reduce((sum, b) => sum + b.totalAmount, 0)
-  , []);
+    setBudgets(prev => [newBudget, ...prev]);
+    return newBudget;
+  }, []);
+
+  const updateBudget = useCallback((id: string, updates: Partial<Budget>) => {
+    setBudgets(prev => prev.map(budget => 
+      budget.id === id 
+        ? { ...budget, ...updates, updatedAt: new Date().toISOString() }
+        : budget
+    ));
+  }, []);
+
+  const deleteBudget = useCallback((id: string) => {
+    setBudgets(prev => prev.filter(budget => budget.id !== id));
+  }, []);
+
+  const getBudgetById = useCallback((id: string) => {
+    return budgets.find(budget => budget.id === id);
+  }, [budgets]);
 
   return {
-    budgets: filteredBudgets,
-    statusCounts,
-    totalRevenue,
-    pendingRevenue,
-    searchTerm,
-    setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-    dateRange,
-    setDateRange,
+    budgets,
+    isLoading,
+    error,
+    addBudget,
+    updateBudget,
+    deleteBudget,
+    getBudgetById
   };
 };

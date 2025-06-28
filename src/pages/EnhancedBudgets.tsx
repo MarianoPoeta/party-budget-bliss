@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Alert, AlertDescription } from '../components/ui/alert';
 import EnhancedBudgetsTable from '../components/budget/EnhancedBudgetsTable';
 import EnhancedBudgetForm from '../components/budget/EnhancedBudgetForm';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useBudgetsData } from '../hooks/useBudgetsData';
 import { useLoadingState } from '../hooks/useLoadingState';
 
 const EnhancedBudgets = () => {
-  const { budgets } = useBudgetsData();
+  const { budgets, isLoading: dataLoading, error: dataError, updateBudget, deleteBudget } = useBudgetsData();
   const { isLoading, error, withLoading, clearError } = useLoadingState();
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState<any>(null);
@@ -21,11 +22,10 @@ const EnhancedBudgets = () => {
     ...budget,
     isClosed: false,
     paymentStatus: budget.status === 'paid' ? 'paid' : 'unpaid' as 'paid' | 'unpaid',
-    createdAt: new Date().toISOString()
+    createdAt: budget.createdAt || new Date().toISOString()
   }));
 
   const handleView = (id: string) => {
-    // Navigate to budget details
     window.location.href = `/budgets/${id}`;
   };
 
@@ -41,19 +41,15 @@ const EnhancedBudgets = () => {
     if (!confirm('Are you sure you want to delete this budget?')) return;
 
     await withLoading(async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Delete budget:', id);
-      // TODO: Implement actual delete logic
+      deleteBudget(id);
     }, 'Failed to delete budget');
   };
 
   const handleSave = async (budget: any) => {
     const success = await withLoading(async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Save budget:', budget);
-      // TODO: Implement actual save logic
+      if (editingBudget) {
+        updateBudget(editingBudget.id, budget);
+      }
       return true;
     }, 'Failed to save budget');
 
@@ -69,13 +65,23 @@ const EnhancedBudgets = () => {
     clearError();
   };
 
+  if (dataLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <LoadingSpinner size="lg" text="Loading budgets..." />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
         {/* Error Display */}
-        {error && (
+        {(error || dataError) && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{error || dataError}</AlertDescription>
           </Alert>
         )}
 
