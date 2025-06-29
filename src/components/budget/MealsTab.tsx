@@ -1,12 +1,13 @@
 
-import React from 'react';
-import { Search, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Plus, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { BudgetItem } from '../../types/EnhancedBudget';
 import { MealTemplate } from '../../types/Budget';
+import MealItemEditor from './MealItemEditor';
 
 interface MealsTabProps {
   templates: MealTemplate[];
@@ -27,6 +28,8 @@ const MealsTab: React.FC<MealsTabProps> = ({
   onAddItem,
   onRemoveItem
 }) => {
+  const [editingMeal, setEditingMeal] = useState<MealTemplate | null>(null);
+
   const filteredTemplates = templates.filter(template =>
     template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     template.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -34,6 +37,15 @@ const MealsTab: React.FC<MealsTabProps> = ({
 
   const calculateMealCost = (meal: MealTemplate) => {
     return meal.pricePerPerson * guestCount;
+  };
+
+  const handleEditMeal = (template: MealTemplate) => {
+    setEditingMeal(template);
+  };
+
+  const handleSaveCustomizedMeal = (customizedMeal: any) => {
+    onAddItem(customizedMeal);
+    setEditingMeal(null);
   };
 
   return (
@@ -58,26 +70,63 @@ const MealsTab: React.FC<MealsTabProps> = ({
           <CardContent className="space-y-3">
             {selectedMeals.map((item) => {
               const meal = item.template as MealTemplate;
+              const hasCustomItems = item.template.customizations?.itemsCustomized;
+              
               return (
-                <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{meal.name}</h4>
-                      <Badge variant="outline">{meal.type}</Badge>
+                <div key={item.id} className="p-4 border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{meal.name}</h4>
+                        <Badge variant="outline">{meal.type}</Badge>
+                        {hasCustomItems && (
+                          <Badge variant="secondary" className="text-xs">
+                            Customized
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-600 mt-1">{meal.description}</p>
+                      <p className="text-sm text-slate-500">{meal.restaurant}</p>
+                      <div className="text-sm font-medium text-green-600 mt-1">
+                        ${calculateMealCost(meal).toLocaleString()} total (${meal.pricePerPerson.toFixed(2)}/person)
+                      </div>
                     </div>
-                    <p className="text-sm text-slate-600 mt-1">{meal.description}</p>
-                    <p className="text-sm text-slate-500">{meal.restaurant}</p>
-                    <div className="text-sm font-medium text-green-600 mt-1">
-                      ${calculateMealCost(meal).toLocaleString()} total (${meal.pricePerPerson}/person)
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditMeal(meal)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onRemoveItem(item.id)}
+                      >
+                        Remove
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onRemoveItem(item.id)}
-                  >
-                    Remove
-                  </Button>
+
+                  {/* Show customized items if available */}
+                  {hasCustomItems && meal.items && (
+                    <div className="mt-3 p-3 bg-slate-50 rounded border-l-4 border-blue-500">
+                      <h5 className="text-sm font-medium text-slate-700 mb-2">Customized Items:</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                        {meal.items.slice(0, 6).map((mealItem: any, index: number) => (
+                          <div key={index} className="flex justify-between">
+                            <span>{mealItem.name}:</span>
+                            <span className="font-medium">{mealItem.quantity} {mealItem.unit}</span>
+                          </div>
+                        ))}
+                        {meal.items.length > 6 && (
+                          <div className="text-slate-500">+{meal.items.length - 6} more items</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -122,15 +171,27 @@ const MealsTab: React.FC<MealsTabProps> = ({
                         </div>
                       </div>
                       
-                      <Button
-                        size="sm"
-                        onClick={() => onAddItem(template)}
-                        disabled={isSelected || !canAdd}
-                        className="flex items-center gap-1"
-                      >
-                        <Plus className="h-4 w-4" />
-                        {isSelected ? 'Added' : 'Add'}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditMeal(template)}
+                          disabled={!canAdd}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Customize
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => onAddItem(template)}
+                          disabled={isSelected || !canAdd}
+                          className="flex items-center gap-1"
+                        >
+                          <Plus className="h-4 w-4" />
+                          {isSelected ? 'Added' : 'Add'}
+                        </Button>
+                      </div>
                     </div>
                     
                     {!canAdd && (
@@ -145,6 +206,17 @@ const MealsTab: React.FC<MealsTabProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Meal Item Editor Dialog */}
+      {editingMeal && (
+        <MealItemEditor
+          isOpen={!!editingMeal}
+          onClose={() => setEditingMeal(null)}
+          mealTemplate={editingMeal}
+          guestCount={guestCount}
+          onSave={handleSaveCustomizedMeal}
+        />
+      )}
     </div>
   );
 };
