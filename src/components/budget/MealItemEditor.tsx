@@ -6,16 +6,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { MealTemplate } from '../../types/Budget';
-
-interface MealItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  pricePerUnit: number;
-  notes?: string;
-}
+import { MealTemplate, MealItem } from '../../types/Budget';
 
 interface MealItemEditorProps {
   isOpen: boolean;

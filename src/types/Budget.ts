@@ -1,8 +1,16 @@
-
 export interface BudgetTemplate {
   id: string;
   name: string;
   description: string;
+}
+
+export interface MealItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  pricePerUnit: number;
+  notes?: string;
 }
 
 export interface MealTemplate extends BudgetTemplate {
@@ -11,6 +19,12 @@ export interface MealTemplate extends BudgetTemplate {
   minPeople: number;
   maxPeople: number;
   restaurant: string;
+  items?: MealItem[];
+  customizations?: {
+    itemsCustomized?: boolean;
+    originalTemplate?: MealTemplate;
+    guestCount?: number;
+  };
 }
 
 export interface ActivityTemplate extends BudgetTemplate {
