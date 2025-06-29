@@ -48,6 +48,11 @@ const MealsTab: React.FC<MealsTabProps> = ({
     setEditingMeal(null);
   };
 
+  // Helper function to check if a template is a MealTemplate
+  const isMealTemplate = (template: any): template is MealTemplate => {
+    return template && typeof template === 'object' && 'type' in template && 'pricePerPerson' in template;
+  };
+
   return (
     <div className="space-y-6">
       {/* Search */}
@@ -69,8 +74,11 @@ const MealsTab: React.FC<MealsTabProps> = ({
           </CardHeader>
           <CardContent className="space-y-3">
             {selectedMeals.map((item) => {
+              // Type guard to ensure we're working with a MealTemplate
+              if (!isMealTemplate(item.template)) return null;
+              
               const meal = item.template as MealTemplate;
-              const hasCustomItems = item.template.customizations?.itemsCustomized;
+              const hasCustomItems = meal.customizations?.itemsCustomized;
               
               return (
                 <div key={item.id} className="p-4 border rounded-lg space-y-3">
@@ -115,7 +123,7 @@ const MealsTab: React.FC<MealsTabProps> = ({
                     <div className="mt-3 p-3 bg-slate-50 rounded border-l-4 border-blue-500">
                       <h5 className="text-sm font-medium text-slate-700 mb-2">Customized Items:</h5>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                        {meal.items.slice(0, 6).map((mealItem: any, index: number) => (
+                        {meal.items.slice(0, 6).map((mealItem, index) => (
                           <div key={index} className="flex justify-between">
                             <span>{mealItem.name}:</span>
                             <span className="font-medium">{mealItem.quantity} {mealItem.unit}</span>
