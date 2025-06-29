@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useBudgetWorkflow } from '../../hooks/useBudgetWorkflow';
 import { useBudgetCalculation } from '../../hooks/useBudgetCalculation';
 import { useTemplates } from '../../hooks/useTemplates';
+import { Menu } from '../../types/Menu';
 import BudgetHeader from './BudgetHeader';
 import MealsTab from './MealsTab';
 import ActivitiesTab from './ActivitiesTab';
@@ -18,12 +19,14 @@ interface EnhancedBudgetFormProps {
   onSave: (budget: any) => void;
   onCancel: () => void;
   initialBudget?: any;
+  menus?: Menu[]; // Add menus prop
 }
 
 const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
   onSave,
   onCancel,
-  initialBudget
+  initialBudget,
+  menus = []
 }) => {
   const { templates } = useTemplates();
   const {
@@ -96,7 +99,7 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
       <Tabs defaultValue="meals" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="meals" className="flex items-center gap-2">
-            Meals
+            Menus
             {budget.selectedMeals && budget.selectedMeals.length > 0 && (
               <Badge variant="secondary" className="ml-1">
                 {budget.selectedMeals.length}
@@ -129,7 +132,7 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
 
         <TabsContent value="meals" className="space-y-4">
           <MealsTab
-            templates={templates.meals || []}
+            templates={menus}
             selectedMeals={budget.selectedMeals || []}
             searchTerm={searchTerms.meals}
             guestCount={budget.guestCount || 0}
