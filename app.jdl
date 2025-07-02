@@ -1,0 +1,464 @@
+application {
+  config {
+    baseName magnus
+    applicationType monolith
+    packageName com.magnus
+    authenticationType jwt
+    prodDatabaseType mysql
+    devDatabaseType h2Disk
+    clientFramework no
+    enableSwaggerCodegen true
+    languages [en, es]
+    websocket spring-websocket
+    enableHibernateCache true
+    cacheProvider ehcache
+    testFrameworks [cypress]
+    buildTool maven
+    serverPort 8080
+  }
+}
+
+enum UserRole {
+  ADMIN,
+  SALES,
+  LOGISTICS,
+  COOK
+}
+
+enum TaskType {
+  SHOPPING,
+  RESERVATION,
+  DELIVERY,
+  COOKING,
+  PREPARATION,
+  SETUP,
+  CLEANUP,
+  OTHER
+}
+
+enum TaskStatus {
+  TODO,
+  IN_PROGRESS,
+  DONE,
+  CANCELED
+}
+
+enum BudgetStatus {
+  DRAFT,
+  PENDING,
+  APPROVED,
+  RESERVA,
+  REJECTED,
+  COMPLETED,
+  CANCELED
+}
+
+enum PaymentStatus {
+  UNPAID,
+  PARTIALLY_PAID,
+  PAID
+}
+
+enum PaymentMethod {
+  CREDIT_CARD,
+  CASH,
+  BANK_TRANSFER,
+  CHECK,
+  OTHER
+}
+
+enum MenuType {
+  BREAKFAST,
+  LUNCH,
+  DINNER,
+  BRUNCH,
+  COCKTAIL,
+  CATERING,
+  SNACKS
+}
+
+enum FoodCategory {
+  APPETIZER,
+  MAIN,
+  DESSERT,
+  BEVERAGE,
+  SPECIAL
+}
+
+enum ActivityCategory {
+  ADVENTURE,
+  OUTDOOR,
+  NIGHTLIFE,
+  DINING,
+  INDOOR,
+  CULTURAL,
+  SPORTS,
+  ENTERTAINMENT
+}
+
+enum AccommodationType {
+  SINGLE,
+  DOUBLE,
+  SUITE,
+  APARTMENT,
+  VILLA,
+  HOSTEL
+}
+
+enum VehicleType {
+  BUS,
+  MINIVAN,
+  CAR,
+  LIMOUSINE,
+  BOAT,
+  MOTORCYCLE
+}
+
+enum ProductCategory {
+  MEAT,
+  VEGETABLES,
+  BEVERAGES,
+  CONDIMENTS,
+  EQUIPMENT,
+  DECORATIONS,
+  SUPPLIES,
+  OTHER
+}
+
+enum ProductUnit {
+  KG,
+  G,
+  LITERS,
+  ML,
+  UNITS,
+  PIECES,
+  BOXES,
+  BAGS,
+  BOTTLES,
+  BUNCHES,
+  LEAVES,
+  SLICES
+}
+
+enum NotificationType {
+  INFO,
+  SUCCESS,
+  WARNING,
+  ERROR
+}
+
+entity Client {
+  name String required maxlength(100)
+  email String required unique pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
+  phone String required maxlength(20)
+  address TextBlob
+  company String maxlength(100)
+  taxId String maxlength(50)
+  notes TextBlob
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity Budget {
+  name String required maxlength(200)
+  clientName String required maxlength(100)
+  eventDate LocalDate required
+  eventLocation String maxlength(200)
+  guestCount Integer required min(1) max(1000)
+  eventGender String required pattern(/^(men|women|mixed)$/)
+  description TextBlob
+  totalAmount BigDecimal required min(0)
+  totalCost BigDecimal min(0)
+  profitMargin BigDecimal min(0)
+  status BudgetStatus required
+  paymentStatus PaymentStatus required
+  isClosed Boolean required
+  internalNotes TextBlob
+  clientNotes TextBlob
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity BudgetItem {
+  itemType String required pattern(/^(menu|activity|transport|accommodation)$/)
+  templateId String required
+  templateName String required
+  quantity Integer required min(1)
+  unitPrice BigDecimal required min(0)
+  unitCost BigDecimal min(0)
+  totalPrice BigDecimal required min(0)
+  totalCost BigDecimal min(0)
+  customizations TextBlob
+  notes TextBlob
+  isCustomized Boolean required
+  createdAt Instant required
+}
+
+entity Payment {
+  method PaymentMethod required
+  amount BigDecimal required min(0)
+  paymentDate LocalDate required
+  reference String maxlength(100)
+  notes TextBlob
+  createdAt Instant required
+}
+
+entity Menu {
+  name String required maxlength(100)
+  description TextBlob
+  type MenuType required
+  pricePerPerson BigDecimal required min(0)
+  costPerPerson BigDecimal min(0)
+  minPeople Integer required min(1)
+  maxPeople Integer min(1)
+  restaurant String required maxlength(100)
+  preparationTime Integer min(0) // minutes
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity MenuItem {
+  name String required maxlength(100)
+  description TextBlob
+  category FoodCategory required
+  price BigDecimal required min(0)
+  cost BigDecimal min(0)
+  allergens TextBlob // JSON array
+  dietaryInfo TextBlob // JSON array
+  preparationTime Integer min(0) // minutes
+  isActive Boolean required
+}
+
+entity FoodItem {
+  name String required maxlength(100)
+  description TextBlob
+  category FoodCategory required
+  basePrice BigDecimal required min(0)
+  baseCost BigDecimal min(0)
+  servingSize String maxlength(50)
+  guestsPerUnit Integer required min(1)
+  maxUnits Integer min(1)
+  allergens TextBlob // JSON array
+  dietaryInfo TextBlob // JSON array
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity Product {
+  name String required maxlength(100)
+  description TextBlob
+  category ProductCategory required
+  unit ProductUnit required
+  pricePerUnit BigDecimal required min(0)
+  minOrderQuantity Double min(0)
+  maxOrderQuantity Double min(0)
+  supplier String maxlength(100)
+  supplierContact TextBlob
+  leadTime Integer min(0) // days
+  shelfLife Integer min(0) // days
+  storageConditions TextBlob
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity ProductRequirement {
+  quantity Double required min(0)
+  unit ProductUnit required
+  notes TextBlob
+  estimatedCost BigDecimal min(0)
+  actualCost BigDecimal min(0)
+}
+
+entity Activity {
+  name String required maxlength(100)
+  description TextBlob
+  category ActivityCategory required
+  basePrice BigDecimal required min(0)
+  baseCost BigDecimal min(0)
+  duration Integer required min(1) // hours
+  maxCapacity Integer required min(1)
+  location String required maxlength(200)
+  transportRequired Boolean required
+  transportIncluded Boolean required
+  equipmentProvided TextBlob
+  requirements TextBlob
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity Accommodation {
+  name String required maxlength(100)
+  description TextBlob
+  type AccommodationType required
+  pricePerNight BigDecimal required min(0)
+  costPerNight BigDecimal min(0)
+  maxOccupancy Integer required min(1)
+  address TextBlob
+  amenities TextBlob // JSON array
+  checkInTime String maxlength(10)
+  checkOutTime String maxlength(10)
+  rating Double min(0) max(5)
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity Transport {
+  name String required maxlength(100)
+  description TextBlob
+  vehicleType VehicleType required
+  capacity Integer required min(1)
+  pricePerHour BigDecimal required min(0)
+  pricePerKm BigDecimal min(0)
+  costPerHour BigDecimal min(0)
+  costPerKm BigDecimal min(0)
+  includesDriver Boolean required
+  driverCost BigDecimal min(0)
+  fuelType String maxlength(50)
+  isActive Boolean required
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity TransportAssignment {
+  guestCount Integer required min(1)
+  duration Double required min(0.5) // hours
+  distance Double min(0) // km
+  pickupLocation String maxlength(200)
+  dropoffLocation String maxlength(200)
+  pickupTime Instant
+  returnTime Instant
+  calculatedPrice BigDecimal required min(0)
+  calculatedCost BigDecimal min(0)
+  notes TextBlob
+  createdAt Instant required
+}
+
+entity Task {
+  title String required maxlength(200)
+  description TextBlob
+  type TaskType required
+  priority TaskPriority required
+  status TaskStatus required
+  assignedToRole UserRole required
+  dueDate LocalDate required
+  dueTime LocalTime
+  estimatedDuration Integer min(0) // minutes
+  actualDuration Integer min(0) // minutes
+  location String maxlength(200)
+  requirements TextBlob
+  notes TextBlob
+  invoiceUrl String maxlength(500)
+  completedAt Instant
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity TaskDependency {
+  dependencyType String required pattern(/^(blocks|requires|suggests)$/)
+  notes String maxlength(500)
+  createdAt Instant required
+}
+
+entity Need {
+  description String required maxlength(500)
+  quantity Integer required min(1)
+  unit String maxlength(20)
+  urgency TaskPriority required
+  status TaskStatus required
+  requestedDate LocalDate required
+  requiredDate LocalDate
+  fulfilledDate LocalDate
+  estimatedCost BigDecimal min(0)
+  actualCost BigDecimal min(0)
+  notes TextBlob
+  createdAt Instant required
+  updatedAt Instant required
+}
+
+entity Notification {
+  title String required maxlength(200)
+  message TextBlob required
+  type NotificationType required
+  targetRole UserRole
+  isRead Boolean required
+  isGlobal Boolean required
+  expiresAt Instant
+  createdAt Instant required
+}
+
+relationship OneToMany {
+  Client to Budget{client required}
+}
+
+relationship OneToMany {
+  Budget to BudgetItem{budget required}
+  Budget to Payment{budget required}
+  Budget to Task{budget required}
+  Budget to TransportAssignment{budget}
+}
+
+relationship ManyToOne {
+  Budget{createdBy} to User with builtInEntity
+  Budget{assignedTo} to User with builtInEntity
+  Task{assignedTo} to User with builtInEntity
+  Task{createdBy} to User with builtInEntity
+  Need{requestedBy} to User with builtInEntity
+  Need{fulfilledBy} to User with builtInEntity
+  Product{createdBy} to User with builtInEntity
+  Notification{createdBy} to User with builtInEntity
+  Notification{targetUser} to User with builtInEntity
+}
+
+relationship OneToMany {
+  Menu to MenuItem{menu required}
+  FoodItem to ProductRequirement{foodItem required}
+}
+
+relationship ManyToMany {
+  Menu{foodItems} to FoodItem{menus}
+}
+
+relationship OneToMany {
+  Activity to ProductRequirement{activity}
+  Activity to TransportAssignment{activity}
+}
+
+relationship ManyToOne {
+  TransportAssignment{transport required} to Transport
+}
+
+relationship OneToMany {
+  Task to Need{task required}
+}
+
+relationship OneToMany {
+  Task{dependencies} to TaskDependency{dependentTask required}
+}
+
+relationship ManyToOne {
+  TaskDependency{prerequisiteTask required} to Task
+}
+
+relationship ManyToOne {
+  ProductRequirement{product required} to Product
+}
+
+dto * with mapstruct
+service * with serviceImpl
+paginate Client, Budget, Task, Product, Activity, Menu, Accommodation, Transport, Notification with pagination
+filter Client, Budget, Task, Product, Activity, Menu, Accommodation, Transport
+deployment {
+  deploymentType docker-compose
+  serviceDiscoveryType no
+  monitoring no
+  gatewayType no
+  appsFolders [magnus]
+  dockerRepositoryName "magnus"
+  dockerPushCommand "docker push"
+} 

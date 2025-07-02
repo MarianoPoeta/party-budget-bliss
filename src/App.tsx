@@ -1,83 +1,164 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import ErrorBoundary from './components/ErrorBoundary';
-import Index from './pages/Index';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { SidebarProvider } from './components/ui/sidebar';
+import { AppSidebar } from './components/AppSidebar';
+import { BreadcrumbNav } from './components/BreadcrumbNav';
+import { Toaster } from './components/ui/toaster';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useStore } from './store';
+
+// Pages
 import Dashboard from './pages/Dashboard';
 import Budgets from './pages/Budgets';
-import NewBudget from './pages/NewBudget';
+import EnhancedBudgets from './pages/EnhancedBudgets';
 import BudgetDetails from './pages/BudgetDetails';
 import Activities from './pages/Activities';
 import Accommodations from './pages/Accommodations';
 import Menus from './pages/Menus';
-import Finances from './pages/Finances';
-import NotFound from './pages/NotFound';
-import SalesDashboard from './pages/SalesDashboard';
-import LogisticsDashboard from './pages/LogisticsDashboard';
-import CookDashboard from './pages/CookDashboard';
-import EnhancedBudgets from './pages/EnhancedBudgets';
-import AdminConfig from './pages/AdminConfig';
+import Products from './pages/Products';
+import Transports from './pages/Transports';
 import Configuration from './pages/Configuration';
-import Login from './pages/Login';
+import AdminConfig from './pages/AdminConfig';
+import CookDashboard from './pages/CookDashboard';
+import LogisticsDashboard from './pages/LogisticsDashboard';
+import SalesDashboard from './pages/SalesDashboard';
 import Profile from './pages/Profile';
-import { useStore } from './store';
-import Toaster from './components/ui/toaster';
+import Login from './pages/Login';
+import NotFound from './pages/NotFound';
+import Clients from './pages/Clients';
 
-const navLinks = [
-  { to: '/sales', label: 'Sales/Coordinator' },
-  { to: '/logistics', label: 'Logistics' },
-  { to: '/cook', label: 'Cook' },
-];
+import './App.css';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
-  const currentUser = useStore(s => s.currentUser);
-  const location = useLocation();
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  const { currentUser } = useStore();
+  
+  if (!currentUser || !currentUser.id) {
+    return <Navigate to="/login" />;
   }
+  
   return children;
 }
 
 const App: React.FC = () => {
+  const { currentUser } = useStore();
+
+  if (!currentUser || !currentUser.id) {
+    return (
+      <ErrorBoundary>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </Router>
+        <Toaster />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <Router>
+        <SidebarProvider>
+          <div className="flex h-screen w-full">
+            <AppSidebar />
+            <main className="flex-1 flex flex-col overflow-hidden">
+              <BreadcrumbNav />
+              <div className="flex-1 overflow-auto p-6">
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={
+                    <RequireAuth>
+                      <Dashboard />
+                    </RequireAuth>
+                  } />
+                  <Route path="/dashboard" element={
+                    <RequireAuth>
+                      <Dashboard />
+                    </RequireAuth>
+                  } />
+                  <Route path="/budgets" element={
+                    <RequireAuth>
+                      <Budgets />
+                    </RequireAuth>
+                  } />
+                  <Route path="/enhanced-budgets" element={
+                    <RequireAuth>
+                      <EnhancedBudgets />
+                    </RequireAuth>
+                  } />
+                  <Route path="/budgets/:id" element={
+                    <RequireAuth>
+                      <BudgetDetails />
+                    </RequireAuth>
+                  } />
+                  <Route path="/activities" element={
+                    <RequireAuth>
+                      <Activities />
+                    </RequireAuth>
+                  } />
+                  <Route path="/accommodations" element={
+                    <RequireAuth>
+                      <Accommodations />
+                    </RequireAuth>
+                  } />
+                  <Route path="/menus" element={
+                    <RequireAuth>
+                      <Menus />
+                    </RequireAuth>
+                  } />
+                  <Route path="/products" element={
+                    <RequireAuth>
+                      <Products />
+                    </RequireAuth>
+                  } />
+                  <Route path="/transports" element={
+                    <RequireAuth>
+                      <Transports />
+                    </RequireAuth>
+                  } />
+                  <Route path="/clients" element={
+                    <RequireAuth>
+                      <Clients />
+                    </RequireAuth>
+                  } />
+                  <Route path="/configuration" element={
+                    <RequireAuth>
+                      <Configuration />
+                    </RequireAuth>
+                  } />
+                  <Route path="/admin" element={
+                    <RequireAuth>
+                      <AdminConfig />
+                    </RequireAuth>
+                  } />
+                  <Route path="/cook-dashboard" element={
+                    <RequireAuth>
+                      <CookDashboard />
+                    </RequireAuth>
+                  } />
+                  <Route path="/logistics-dashboard" element={
+                    <RequireAuth>
+                      <LogisticsDashboard />
+                    </RequireAuth>
+                  } />
+                  <Route path="/sales-dashboard" element={
+                    <RequireAuth>
+                      <SalesDashboard />
+                    </RequireAuth>
+                  } />
+                  <Route path="/profile" element={
+                    <RequireAuth>
+                      <Profile />
+                    </RequireAuth>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </main>
+          </div>
+        </SidebarProvider>
         <Toaster />
-        <div className="min-h-screen bg-slate-50">
-          <nav className="bg-slate-800 text-white px-6 py-4 flex gap-6 items-center shadow">
-            <span className="font-bold text-lg tracking-wide">Party Budget Bliss</span>
-            {navLinks.map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="hover:underline hover:text-green-300 transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-          <main className="py-8">
-        <Routes>
-          <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-              <Route path="/budgets" element={<RequireAuth><Budgets /></RequireAuth>} />
-              <Route path="/budgets/enhanced" element={<RequireAuth><EnhancedBudgets /></RequireAuth>} />
-              <Route path="/budgets/new" element={<RequireAuth><NewBudget /></RequireAuth>} />
-              <Route path="/budgets/:id" element={<RequireAuth><BudgetDetails /></RequireAuth>} />
-              <Route path="/activities" element={<RequireAuth><Activities /></RequireAuth>} />
-              <Route path="/accommodations" element={<RequireAuth><Accommodations /></RequireAuth>} />
-              <Route path="/menus" element={<RequireAuth><Menus /></RequireAuth>} />
-              <Route path="/finances" element={<RequireAuth><Finances /></RequireAuth>} />
-              <Route path="/sales" element={<RequireAuth><SalesDashboard /></RequireAuth>} />
-              <Route path="/logistics" element={<RequireAuth><LogisticsDashboard /></RequireAuth>} />
-              <Route path="/cook" element={<RequireAuth><CookDashboard /></RequireAuth>} />
-              <Route path="/admin/config" element={<RequireAuth><AdminConfig /></RequireAuth>} />
-              <Route path="/configuration" element={<RequireAuth><Configuration /></RequireAuth>} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-              <Route path="*" element={<Navigate to="/sales" replace />} />
-        </Routes>
-          </main>
-        </div>
       </Router>
     </ErrorBoundary>
   );
