@@ -1,64 +1,16 @@
-
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import Layout from '../components/Layout';
 import AccommodationCard from '../components/AccommodationCard';
 import AccommodationForm from '../components/AccommodationForm';
 import { Accommodation } from '../types/Accommodation';
-
-// Mock data
-const mockAccommodations: Accommodation[] = [
-  {
-    id: '1',
-    name: 'Luxury Downtown Hotel',
-    description: 'Premium hotel in the heart of the city with rooftop bar and spa facilities',
-    pricePerNight: 250,
-    maxOccupancy: 4,
-    roomType: 'suite',
-    amenities: ['WiFi', 'Pool', 'Gym', 'Spa', 'Room Service', 'Bar'],
-    location: 'Downtown District',
-    rating: 5,
-    isActive: true,
-  },
-  {
-    id: '2',
-    name: 'Beachfront Resort',
-    description: 'Stunning oceanview resort with private beach access and water sports',
-    pricePerNight: 180,
-    maxOccupancy: 6,
-    roomType: 'villa',
-    amenities: ['Beach Access', 'Pool', 'Restaurant', 'Water Sports', 'WiFi'],
-    location: 'Coastal Area',
-    rating: 4,
-    isActive: true,
-  },
-  {
-    id: '3',
-    name: 'Modern City Apartment',
-    description: 'Spacious apartment with full kitchen and living area in trendy neighborhood',
-    pricePerNight: 120,
-    maxOccupancy: 8,
-    roomType: 'apartment',
-    amenities: ['Kitchen', 'WiFi', 'Washer/Dryer', 'Parking', 'Balcony'],
-    location: 'Arts District',
-    rating: 4,
-    isActive: true,
-  },
-  {
-    id: '4',
-    name: 'Budget Hostel',
-    description: 'Clean and comfortable hostel with shared facilities and great location',
-    pricePerNight: 45,
-    maxOccupancy: 12,
-    roomType: 'hostel',
-    amenities: ['WiFi', 'Shared Kitchen', 'Lounge', 'Lockers'],
-    location: 'City Center',
-    rating: 3,
-    isActive: true,
-  },
-];
+import { useStore } from '../store';
 
 const Accommodations = () => {
+  const currentUser = useStore(s => s.currentUser);
+  const accommodations = useStore(s => s.accommodations);
+  const setAccommodations = useStore(s => s.setAccommodations);
+  const addToast = useStore(s => s.addToast);
   const [searchTerm, setSearchTerm] = useState('');
   const [roomTypeFilter, setRoomTypeFilter] = useState<Accommodation['roomType'] | 'all'>('all');
   const [showInactive, setShowInactive] = useState(false);
@@ -67,7 +19,7 @@ const Accommodations = () => {
 
   const roomTypes: Array<Accommodation['roomType'] | 'all'> = ['all', 'single', 'double', 'suite', 'apartment', 'villa', 'hostel'];
 
-  const filteredAccommodations = mockAccommodations.filter(accommodation => {
+  const filteredAccommodations = accommodations.filter(accommodation => {
     const matchesSearch = accommodation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          accommodation.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = roomTypeFilter === 'all' || accommodation.roomType === roomTypeFilter;
@@ -83,6 +35,11 @@ const Accommodations = () => {
   const handleNewAccommodation = () => {
     setEditingAccommodation(null);
     setIsFormOpen(true);
+  };
+
+  const handleSaveAccommodation = (accommodation: Accommodation) => {
+    setAccommodations(accommodations.map(a => a.id === accommodation.id ? accommodation : a));
+    addToast({ id: Date.now().toString(), message: 'Accommodation saved!', type: 'success' });
   };
 
   return (

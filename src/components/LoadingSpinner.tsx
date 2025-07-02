@@ -1,18 +1,17 @@
-
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
-  className?: string;
   text?: string;
+  className?: string;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
-  className,
-  text 
+  text = 'Loading...', 
+  className = '' 
 }) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
@@ -21,11 +20,27 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div className={cn('flex items-center justify-center gap-2', className)}>
-      <Loader2 className={cn('animate-spin', sizeClasses[size])} />
-      {text && <span className="text-sm text-muted-foreground">{text}</span>}
+    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600 mb-2`} />
+      {text && (
+        <p className="text-sm text-slate-600 animate-pulse">{text}</p>
+      )}
     </div>
   );
 };
 
-export default LoadingSpinner;
+export const PageLoadingSpinner: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <LoadingSpinner size="lg" text="Loading page..." />
+  </div>
+);
+
+export const TableLoadingSpinner: React.FC = () => (
+  <div className="flex items-center justify-center py-8">
+    <LoadingSpinner size="md" text="Loading data..." />
+  </div>
+);
+
+export const ButtonLoadingSpinner: React.FC = () => (
+  <Loader2 className="h-4 w-4 animate-spin" />
+);

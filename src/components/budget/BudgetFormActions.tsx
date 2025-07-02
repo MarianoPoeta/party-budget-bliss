@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Save, X } from 'lucide-react';
+import { Save, X, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 
@@ -8,25 +7,34 @@ interface BudgetFormActionsProps {
   onCancel: () => void;
   onSave: () => void;
   hasErrors: boolean;
+  isDirty?: boolean;
 }
 
 const BudgetFormActions: React.FC<BudgetFormActionsProps> = ({
   onCancel,
   onSave,
-  hasErrors
+  hasErrors,
+  isDirty = false
 }) => {
   return (
     <Card className="border-t-2 border-slate-200">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-slate-600 flex items-center gap-2">
             {hasErrors ? (
-              <span className="text-red-600 font-medium">
-                Please fix all errors before saving
+              <>
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="text-red-600 font-medium">
+                  Por favor corrige todos los errores antes de guardar
+                </span>
+              </>
+            ) : isDirty ? (
+              <span className="text-amber-600 font-medium">
+                Tienes cambios sin guardar
               </span>
             ) : (
               <span>
-                Review your budget and save when ready
+                Revisa tu presupuesto y guarda cuando estés listo
               </span>
             )}
           </div>
@@ -38,16 +46,20 @@ const BudgetFormActions: React.FC<BudgetFormActionsProps> = ({
               className="flex items-center gap-2"
             >
               <X className="h-4 w-4" />
-              Cancel
+              Cancelar
             </Button>
             
             <Button
               onClick={onSave}
               disabled={hasErrors}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700"
+              className={`flex items-center gap-2 ${
+                hasErrors 
+                  ? 'bg-slate-300 cursor-not-allowed' 
+                  : 'bg-slate-800 hover:bg-slate-700'
+              }`}
             >
               <Save className="h-4 w-4" />
-              Save Budget
+              Guardar Presupuesto
             </Button>
           </div>
         </div>

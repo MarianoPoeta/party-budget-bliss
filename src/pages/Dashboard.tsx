@@ -1,348 +1,603 @@
-
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { CalendarDays, DollarSign, Users, TrendingUp, Plus, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '../components/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { useBudgetsData } from '../hooks/useBudgetsData';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Progress } from '../components/ui/progress';
+import { 
+  DollarSign, 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  TrendingDown, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle,
+  Plus,
+  ArrowRight,
+  BarChart3,
+  Activity,
+  UtensilsCrossed,
+  Truck,
+  MapPin,
+  Package,
+  Zap,
+  Target,
+  CalendarDays,
+  ShoppingCart,
+  ChefHat,
+  Car,
+  Hotel,
+  Bell,
+  Star
+} from 'lucide-react';
+import { useStore } from '../store';
+import { RoleSelector } from '../components/RoleSelector';
+import { useNavigate } from 'react-router-dom';
 
-const Dashboard = () => {
-  const { budgets, isLoading, error } = useBudgetsData();
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { 
+    budgets, 
+    tasks, 
+    currentUser, 
+    setCurrentUser,
+    notifications 
+  } = useStore();
+  
+  const [activeTab, setActiveTab] = useState('workflow');
 
-  const dashboardStats = useMemo(() => {
-    const totalRevenue = budgets
-      .filter(b => b.status === 'paid')
-      .reduce((sum, b) => sum + b.totalAmount, 0);
-    
-    const pendingRevenue = budgets
-      .filter(b => b.status === 'pending')
-      .reduce((sum, b) => sum + b.totalAmount, 0);
-    
-    const totalGuests = budgets.reduce((sum, b) => sum + b.guestCount, 0);
-    
-    const upcomingEvents = budgets.filter(b => {
-      const eventDate = new Date(b.eventDate);
-      const today = new Date();
-      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-      return eventDate >= today && eventDate <= nextMonth;
-    }).length;
+  // Calculate dashboard metrics
+  const totalBudgets = budgets.length;
+  const activeBudgets = budgets.filter(b => b.status === 'pending').length;
+  const completedBudgets = budgets.filter(b => b.status === 'completed').length;
+  const reservaBudgets = budgets.filter(b => b.status === 'reserva').length;
+  const totalRevenue = budgets.reduce((sum, b) => sum + b.totalAmount, 0);
+  const pendingTasks = tasks.filter(t => t.status === 'todo').length;
+  const completedTasks = tasks.filter(t => t.status === 'done').length;
+  const totalTasks = tasks.length;
+  const overdueTasks = tasks.filter(t => {
+    if (t.dueDate && t.status !== 'done') {
+      return new Date(t.dueDate) < new Date();
+    }
+    return false;
+  }).length;
 
-    return {
-      totalRevenue,
-      pendingRevenue,
-      totalGuests,
-      upcomingEvents,
-      totalBudgets: budgets.length,
-      paidBudgets: budgets.filter(b => b.status === 'paid').length,
-      pendingBudgets: budgets.filter(b => b.status === 'pending').length
-    };
-  }, [budgets]);
-
-  const recentBudgets = useMemo(() => {
-    return budgets
-      .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
-      .slice(0, 5);
-  }, [budgets]);
-
+  // Get upcoming events (next 7 days)
   const upcomingEvents = useMemo(() => {
-    const today = new Date();
+    const now = new Date();
+    const weekFromNow = new Date();
+    weekFromNow.setDate(now.getDate() + 7);
+    
     return budgets
-      .filter(b => new Date(b.eventDate) >= today)
+      .filter(b => new Date(b.eventDate) >= now && new Date(b.eventDate) <= weekFromNow)
       .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
       .slice(0, 5);
   }, [budgets]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      paid: 'bg-green-100 text-green-800 border-green-200',
-      canceled: 'bg-red-100 text-red-800 border-red-200'
-    };
+  // Get urgent tasks
+  const urgentTasks = useMemo(() => {
+    const now = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(now.getDate() + 1);
     
-    return (
-      <Badge className={variants[status as keyof typeof variants]} variant="outline">
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
+    return tasks
+      .filter(t => {
+        if (t.status === 'done') return false;
+        if (t.assignedToRole !== currentUser.role && currentUser.role !== 'admin') return false;
+        return new Date(t.dueDate) <= tomorrow;
+      })
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 5);
+  }, [tasks, currentUser.role]);
+
+  // Get role-specific stats and workflow
+  const getRoleWorkflow = () => {
+    switch (currentUser.role) {
+      case 'admin':
+        return {
+          title: 'Panel de Administración',
+          description: 'Gestión completa del sistema y supervisión de operaciones',
+          stats: [
+            { label: 'Presupuestos Totales', value: totalBudgets, icon: DollarSign, color: 'text-blue-600', trend: '+12%' },
+            { label: 'En Reserva', value: reservaBudgets, icon: Calendar, color: 'text-indigo-600', trend: '+5%' },
+            { label: 'Tareas Pendientes', value: pendingTasks, icon: Clock, color: 'text-orange-600', trend: '-8%' },
+            { label: 'Ingresos Totales', value: `$${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-green-600', trend: '+15%' }
+          ],
+          workflow: [
+            { title: 'Presupuestos Pendientes', count: activeBudgets, action: 'Revisar', href: '/budgets', icon: DollarSign },
+            { title: 'Tareas Urgentes', count: urgentTasks.length, action: 'Asignar', href: '/tasks', icon: AlertTriangle },
+            { title: 'Eventos Próximos', count: upcomingEvents.length, action: 'Ver', href: '/calendar', icon: CalendarDays },
+            { title: 'Notificaciones', count: notifications.length, action: 'Revisar', href: '/notifications', icon: Bell }
+          ]
+        };
+      case 'sales':
+        return {
+          title: 'Panel de Ventas',
+          description: 'Gestión de presupuestos y seguimiento de clientes',
+          stats: [
+            { label: 'Presupuestos Activos', value: activeBudgets, icon: DollarSign, color: 'text-blue-600', trend: '+8%' },
+            { label: 'En Reserva', value: reservaBudgets, icon: Calendar, color: 'text-indigo-600', trend: '+12%' },
+            { label: 'Completados', value: completedBudgets, icon: CheckCircle, color: 'text-green-600', trend: '+3%' },
+            { label: 'Ingresos Generados', value: `$${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-green-600', trend: '+18%' }
+          ],
+          workflow: [
+            { title: 'Presupuestos por Aprobar', count: activeBudgets, action: 'Revisar', href: '/budgets', icon: DollarSign },
+            { title: 'Clientes en Espera', count: budgets.filter(b => b.status === 'pending').length, action: 'Contactar', href: '/clients', icon: Users },
+            { title: 'Eventos Próximos', count: upcomingEvents.length, action: 'Preparar', href: '/calendar', icon: CalendarDays },
+            { title: 'Tareas Pendientes', count: pendingTasks, action: 'Asignar', href: '/tasks', icon: Clock }
+          ]
+        };
+      case 'logistics':
+        return {
+          title: 'Panel de Logística',
+          description: 'Gestión de transporte, alojamiento y equipamiento',
+          stats: [
+            { label: 'Tareas de Transporte', value: tasks.filter(t => t.type === 'delivery').length, icon: Truck, color: 'text-blue-600', trend: '+5%' },
+            { label: 'Compras Pendientes', value: tasks.filter(t => t.type === 'shopping').length, icon: ShoppingCart, color: 'text-purple-600', trend: '+10%' },
+            { label: 'Tareas Urgentes', count: urgentTasks.length, icon: AlertTriangle, color: 'text-red-600', trend: '-15%' },
+            { label: 'Completadas Hoy', value: tasks.filter(t => t.status === 'done' && new Date(t.dueDate).toDateString() === new Date().toDateString()).length, icon: CheckCircle, color: 'text-green-600', trend: '+20%' }
+          ],
+          workflow: [
+            { title: 'Compras Urgentes', count: urgentTasks.filter(t => t.type === 'shopping').length, action: 'Comprar', href: '/logistics', icon: ShoppingCart },
+            { title: 'Entregas Pendientes', count: urgentTasks.filter(t => t.type === 'delivery').length, action: 'Entregar', href: '/logistics', icon: Truck },
+            { title: 'Eventos Próximos', count: upcomingEvents.length, action: 'Preparar', href: '/calendar', icon: CalendarDays },
+            { title: 'Inventario', count: 0, action: 'Revisar', href: '/inventory', icon: Package }
+          ]
+        };
+      case 'cook':
+        return {
+          title: 'Panel de Cocina',
+          description: 'Planificación de menús y preparación de alimentos',
+          stats: [
+            { label: 'Tareas de Cocina', value: tasks.filter(t => t.type === 'cooking').length, icon: ChefHat, color: 'text-orange-600', trend: '+7%' },
+            { label: 'Menús por Preparar', value: tasks.filter(t => t.type === 'cooking' && t.status === 'todo').length, icon: UtensilsCrossed, color: 'text-purple-600', trend: '+12%' },
+            { label: 'Tareas Urgentes', count: urgentTasks.length, icon: AlertTriangle, color: 'text-red-600', trend: '-10%' },
+            { label: 'Completadas Hoy', value: tasks.filter(t => t.status === 'done' && new Date(t.dueDate).toDateString() === new Date().toDateString()).length, icon: CheckCircle, color: 'text-green-600', trend: '+25%' }
+          ],
+          workflow: [
+            { title: 'Preparaciones Urgentes', count: urgentTasks.filter(t => t.type === 'cooking').length, action: 'Cocinar', href: '/cook', icon: ChefHat },
+            { title: 'Menús por Planificar', count: tasks.filter(t => t.type === 'cooking' && t.status === 'todo').length, action: 'Planificar', href: '/cook', icon: UtensilsCrossed },
+            { title: 'Eventos Próximos', count: upcomingEvents.length, action: 'Preparar', href: '/calendar', icon: CalendarDays },
+            { title: 'Inventario Cocina', count: 0, action: 'Revisar', href: '/kitchen-inventory', icon: Package }
+          ]
+        };
+      default:
+        return {
+          title: 'Panel Principal',
+          description: 'Vista general del sistema',
+          stats: [
+            { label: 'Presupuestos', value: totalBudgets, icon: DollarSign, color: 'text-blue-600', trend: '+10%' },
+            { label: 'Tareas Pendientes', value: pendingTasks, icon: Clock, color: 'text-orange-600', trend: '-5%' },
+            { label: 'Tareas Completadas', value: completedTasks, icon: CheckCircle, color: 'text-green-600', trend: '+15%' },
+            { label: 'Ingresos', value: `$${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-green-600', trend: '+12%' }
+          ],
+          workflow: [
+            { title: 'Presupuestos', count: totalBudgets, action: 'Ver', href: '/budgets', icon: DollarSign },
+            { title: 'Tareas', count: pendingTasks, action: 'Gestionar', href: '/tasks', icon: Clock },
+            { title: 'Eventos', count: upcomingEvents.length, action: 'Ver', href: '/calendar', icon: CalendarDays },
+            { title: 'Notificaciones', count: notifications.length, action: 'Revisar', href: '/notifications', icon: Bell }
+          ]
+        };
+    }
   };
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" text="Loading dashboard..." />
-        </div>
-      </Layout>
-    );
-  }
+  const roleWorkflow = getRoleWorkflow();
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-red-600">Dashboard Error</CardTitle>
-              <CardDescription>{error}</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'done': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'todo': return 'bg-yellow-100 text-yellow-800';
+      case 'reserva': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'done': return 'Completada';
+      case 'in_progress': return 'En Progreso';
+      case 'todo': return 'Pendiente';
+      case 'reserva': return 'Reserva';
+      default: return status;
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'delivery': return Truck;
+      case 'cooking': return ChefHat;
+      case 'shopping': return ShoppingCart;
+      case 'reservation': return MapPin;
+      case 'need': return Activity;
+      default: return Activity;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-600';
+      case 'medium': return 'text-yellow-600';
+      case 'low': return 'text-green-600';
+      default: return 'text-gray-600';
+    }
+  };
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Welcome Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Header with Quick Actions */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-              Welcome to Bachelor Pro
-            </h1>
-            <p className="text-slate-600">
-              Manage your bachelor party events with ease
-            </p>
+            <h1 className="text-3xl font-bold text-slate-900">{roleWorkflow.title}</h1>
+            <p className="text-slate-600 mt-2">{roleWorkflow.description}</p>
           </div>
-          <Link to="/budgets/new">
-            <Button className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
-              <Plus className="h-4 w-4" />
-              New Budget
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="capitalize">
+              {currentUser.role === 'admin' ? 'Administrador' : 
+               currentUser.role === 'sales' ? 'Ventas' :
+               currentUser.role === 'logistics' ? 'Logística' : 'Cocinero'}
+            </Badge>
+            <Button onClick={() => navigate('/new-budget')} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Presupuesto
             </Button>
-          </Link>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
-                Total Revenue
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {formatCurrency(dashboardStats.totalRevenue)}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                From {dashboardStats.paidBudgets} paid events
-              </p>
-            </CardContent>
-          </Card>
+        {/* Role Selector */}
+        <RoleSelector />
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
-                Pending Revenue
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {formatCurrency(dashboardStats.pendingRevenue)}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                From {dashboardStats.pendingBudgets} pending events
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
-                Total Guests
-              </CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {dashboardStats.totalGuests.toLocaleString()}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Across {dashboardStats.totalBudgets} events
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
-                Upcoming Events
-              </CardTitle>
-              <CalendarDays className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {dashboardStats.upcomingEvents}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Next 30 days
-              </p>
-            </CardContent>
-          </Card>
+        {/* Stats Cards with Trends */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {roleWorkflow.stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={index} className="hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <Icon className={`h-8 w-8 ${stat.color}`} />
+                    <Badge variant="outline" className={`text-xs ${stat.trend?.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                      {stat.trend}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/budgets/new" className="group">
-            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
-              <CardContent className="p-6 text-center">
-                <Plus className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
-                <h3 className="font-semibold text-slate-900 mb-1">Create Budget</h3>
-                <p className="text-sm text-slate-600">Start a new event budget</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link to="/budgets" className="group">
-            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
-              <CardContent className="p-6 text-center">
-                <CalendarDays className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
-                <h3 className="font-semibold text-slate-900 mb-1">View Budgets</h3>
-                <p className="text-sm text-slate-600">Manage all budgets</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link to="/activities" className="group">
-            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
-              <CardContent className="p-6 text-center">
-                <Users className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
-                <h3 className="font-semibold text-slate-900 mb-1">Activities</h3>
-                <p className="text-sm text-slate-600">Browse activities</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link to="/finances" className="group">
-            <Card className="hover:shadow-md transition-all duration-200 group-hover:scale-105">
-              <CardContent className="p-6 text-center">
-                <DollarSign className="h-8 w-8 mx-auto mb-3 text-slate-600 group-hover:text-slate-900" />
-                <h3 className="font-semibold text-slate-900 mb-1">Finances</h3>
-                <p className="text-sm text-slate-600">Track payments</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Recent Activity and Upcoming Events */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Budgets */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Recent Budgets</CardTitle>
-                <CardDescription>Latest budget activities</CardDescription>
-              </div>
-              <Link to="/budgets">
-                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">
-                  View All
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {recentBudgets.length > 0 ? (
-                <div className="space-y-4">
-                  {recentBudgets.map((budget) => (
-                    <div key={budget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-slate-900 truncate">{budget.clientName}</p>
-                          {getStatusBadge(budget.status)}
-                        </div>
-                        <p className="text-sm text-slate-600">
-                          {formatDate(budget.eventDate)} • {budget.guestCount} guests
-                        </p>
+        {/* Workflow Overview */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-blue-600" />
+              Flujo de Trabajo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {roleWorkflow.workflow.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white rounded-lg border border-slate-200 hover:border-blue-300 transition-all duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${index === 0 ? 'bg-red-100' : index === 1 ? 'bg-orange-100' : index === 2 ? 'bg-blue-100' : 'bg-green-100'}`}>
+                        <Icon className={`h-5 w-5 ${index === 0 ? 'text-red-600' : index === 1 ? 'text-orange-600' : index === 2 ? 'text-blue-600' : 'text-green-600'}`} />
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="font-semibold text-slate-900">{formatCurrency(budget.totalAmount)}</p>
+                      <div>
+                        <p className="font-medium text-slate-900">{item.title}</p>
+                        <p className="text-sm text-slate-600">{item.count} items</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-slate-500 mb-4">No budgets created yet</p>
-                  <Link to="/budgets/new">
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First Budget
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate(item.href)}
+                      className="hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      {item.action}
+                      <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Upcoming Events */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Upcoming Events</CardTitle>
-                <CardDescription>Events scheduled ahead</CardDescription>
-              </div>
-              <Link to="/budgets">
-                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">
-                  View All
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {upcomingEvents.length > 0 ? (
-                <div className="space-y-4">
-                  {upcomingEvents.map((budget) => (
-                    <div key={budget.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-slate-900 truncate">{budget.clientName}</p>
-                          {getStatusBadge(budget.status)}
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="workflow">Flujo de Trabajo</TabsTrigger>
+            <TabsTrigger value="urgent">Urgente</TabsTrigger>
+            <TabsTrigger value="upcoming">Próximos Eventos</TabsTrigger>
+            <TabsTrigger value="analytics">Análisis</TabsTrigger>
+          </TabsList>
+
+          {/* Workflow Tab */}
+          <TabsContent value="workflow" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Budgets */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    Presupuestos Recientes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {budgets.slice(0, 5).map((budget) => (
+                      <div key={budget.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white rounded-lg border border-slate-200 hover:border-blue-300 transition-all duration-300">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <DollarSign className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900">{budget.clientName}</p>
+                            <p className="text-sm text-slate-600">{budget.eventType}</p>
+                          </div>
                         </div>
-                        <p className="text-sm text-slate-600">
-                          {formatDate(budget.eventDate)} • {budget.guestCount} guests
-                        </p>
+                        <div className="text-right">
+                          <p className="font-semibold text-slate-900">${budget.totalAmount.toLocaleString()}</p>
+                          <Badge variant={budget.status === 'completed' ? 'default' : 'secondary'}>
+                            {budget.status === 'completed' ? 'Completado' : 
+                             budget.status === 'pending' ? 'Activo' : 
+                             budget.status === 'reserva' ? 'Reserva' : 'Borrador'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="font-semibold text-slate-900">{formatCurrency(budget.totalAmount)}</p>
-                      </div>
+                    ))}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => navigate('/budgets')}
+                  >
+                    Ver Todos los Presupuestos
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Recent Tasks */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-green-600" />
+                    Tareas Recientes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {tasks
+                      .filter(t => t.assignedToRole === currentUser.role || currentUser.role === 'admin')
+                      .slice(0, 5)
+                      .map((task) => {
+                        const CategoryIcon = getCategoryIcon(task.type);
+                        return (
+                          <div key={task.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white rounded-lg border border-slate-200 hover:border-green-300 transition-all duration-300">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-green-100 rounded-lg">
+                                <CategoryIcon className="h-4 w-4 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-900">{task.description}</p>
+                                <p className="text-sm text-slate-600">{new Date(task.dueDate).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <Badge className={getStatusColor(task.status)}>
+                              {getStatusText(task.status)}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => navigate('/tasks')}
+                  >
+                    Ver Todas las Tareas
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Urgent Tab */}
+          <TabsContent value="urgent" className="space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  Tareas Urgentes ({urgentTasks.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {urgentTasks.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                      <p className="text-lg font-medium text-slate-900 mb-2">¡Excelente trabajo!</p>
+                      <p className="text-slate-600">No hay tareas urgentes pendientes.</p>
                     </div>
-                  ))}
+                  ) : (
+                    urgentTasks.map((task) => {
+                      const CategoryIcon = getCategoryIcon(task.type);
+                      const isOverdue = new Date(task.dueDate) < new Date();
+                      return (
+                        <div key={task.id} className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-300 ${
+                          isOverdue 
+                            ? 'bg-red-50 border-red-200 hover:border-red-300' 
+                            : 'bg-orange-50 border-orange-200 hover:border-orange-300'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${isOverdue ? 'bg-red-100' : 'bg-orange-100'}`}>
+                              <CategoryIcon className={`h-4 w-4 ${isOverdue ? 'text-red-600' : 'text-orange-600'}`} />
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900">{task.description}</p>
+                              <p className="text-sm text-slate-600">
+                                Vence: {new Date(task.dueDate).toLocaleDateString()}
+                                {isOverdue && <span className="text-red-600 ml-2">(Vencida)</span>}
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm"
+                            onClick={() => navigate(`/tasks/${task.id}`)}
+                            className={isOverdue ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-600 hover:bg-orange-700'}
+                          >
+                            {isOverdue ? 'Urgente' : 'Atender'}
+                          </Button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <CalendarDays className="h-12 w-12 mx-auto text-slate-400 mb-4" />
-                  <p className="text-slate-500 mb-4">No upcoming events</p>
-                  <Link to="/budgets/new">
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Schedule Event
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Upcoming Events Tab */}
+          <TabsContent value="upcoming" className="space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-indigo-600" />
+                  Próximos Eventos ({upcomingEvents.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {upcomingEvents.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                      <p className="text-lg font-medium text-slate-900 mb-2">Sin eventos próximos</p>
+                      <p className="text-slate-600">No hay eventos programados para los próximos 7 días.</p>
+                    </div>
+                  ) : (
+                    upcomingEvents.map((budget) => {
+                      const daysUntil = Math.ceil((new Date(budget.eventDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                      return (
+                        <div key={budget.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-white rounded-lg border border-indigo-200 hover:border-indigo-300 transition-all duration-300">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-100 rounded-lg">
+                              <Calendar className="h-4 w-4 text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900">{budget.clientName}</p>
+                              <p className="text-sm text-slate-600">{budget.eventType} • {budget.guestCount} invitados</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-slate-900">${budget.totalAmount.toLocaleString()}</p>
+                            <Badge variant={daysUntil <= 1 ? 'destructive' : daysUntil <= 3 ? 'secondary' : 'outline'}>
+                              {daysUntil === 0 ? 'Hoy' : daysUntil === 1 ? 'Mañana' : `En ${daysUntil} días`}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Performance Metrics */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                    Métricas de Rendimiento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-700">Tareas Completadas</span>
+                      <span className="text-sm text-slate-600">{completedTasks}/{totalTasks}</span>
+                    </div>
+                    <Progress value={(completedTasks / (completedTasks + pendingTasks)) * 100} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-700">Presupuestos Aprobados</span>
+                      <span className="text-sm text-slate-600">{reservaBudgets}/{totalBudgets}</span>
+                    </div>
+                    <Progress value={(reservaBudgets / totalBudgets) * 100} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-700">Eficiencia General</span>
+                      <span className="text-sm text-slate-600">85%</span>
+                    </div>
+                    <Progress value={85} className="h-2" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-yellow-600" />
+                    Acciones Rápidas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="h-20 flex flex-col items-center justify-center gap-2"
+                      onClick={() => navigate('/new-budget')}
+                    >
+                      <Plus className="h-5 w-5" />
+                      <span className="text-xs">Nuevo Presupuesto</span>
                     </Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    <Button 
+                      variant="outline" 
+                      className="h-20 flex flex-col items-center justify-center gap-2"
+                      onClick={() => navigate('/tasks')}
+                    >
+                      <Activity className="h-5 w-5" />
+                      <span className="text-xs">Ver Tareas</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="h-20 flex flex-col items-center justify-center gap-2"
+                      onClick={() => navigate('/calendar')}
+                    >
+                      <Calendar className="h-5 w-5" />
+                      <span className="text-xs">Calendario</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="h-20 flex flex-col items-center justify-center gap-2"
+                      onClick={() => navigate('/reports')}
+                    >
+                      <BarChart3 className="h-5 w-5" />
+                      <span className="text-xs">Reportes</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UtensilsCrossed, Users, DollarSign, Clock, MapPin } from 'lucide-react';
 import { MealTemplate } from '../types/Budget';
@@ -36,17 +35,17 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
     return (
       <Card className="border-slate-200">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Edit Meal</CardTitle>
+          <CardTitle className="text-sm font-medium">Editar Comida</CardTitle>
           {onRemove && (
             <Button variant="ghost" size="sm" onClick={onRemove}>
-              Remove
+              Eliminar
             </Button>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-slate-600">Name</label>
+              <label className="text-xs font-medium text-slate-600">Nombre</label>
               <Input
                 value={editableItem.name}
                 onChange={(e) => onChange?.({ ...editableItem, name: e.target.value })}
@@ -54,7 +53,7 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Restaurant</label>
+              <label className="text-xs font-medium text-slate-600">Restaurante</label>
               <Input
                 value={editableItem.restaurant}
                 onChange={(e) => onChange?.({ ...editableItem, restaurant: e.target.value })}
@@ -62,7 +61,7 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Price per Person</label>
+              <label className="text-xs font-medium text-slate-600">Precio por Persona</label>
               <Input
                 type="number"
                 value={editableItem.pricePerPerson}
@@ -71,7 +70,7 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Min People</label>
+              <label className="text-xs font-medium text-slate-600">Min Personas</label>
               <Input
                 type="number"
                 value={editableItem.minPeople}
@@ -87,7 +86,7 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-slate-900">Select Meals</h3>
+      <h3 className="text-lg font-semibold text-slate-900">Seleccionar Comidas</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.map((meal) => (
           <Card key={meal.id} className="hover:shadow-md transition-shadow cursor-pointer border-slate-200">
@@ -107,11 +106,11 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
               <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 mb-4">
                 <div className="flex items-center">
                   <DollarSign className="h-3 w-3 mr-1" />
-                  ${meal.pricePerPerson}/person
+                  ${meal.pricePerPerson}/persona
                 </div>
                 <div className="flex items-center">
                   <Users className="h-3 w-3 mr-1" />
-                  {meal.minPeople}-{meal.maxPeople} people
+                  {meal.minPeople}-{meal.maxPeople} personas
                 </div>
                 <div className="flex items-center col-span-2">
                   <MapPin className="h-3 w-3 mr-1" />
@@ -124,7 +123,7 @@ const MealsTemplate: React.FC<MealsTemplateProps> = ({
                 className="w-full bg-slate-800 hover:bg-slate-700"
                 onClick={() => onSelect?.(meal)}
               >
-                Select Meal
+                Seleccionar Comida
               </Button>
             </CardContent>
           </Card>

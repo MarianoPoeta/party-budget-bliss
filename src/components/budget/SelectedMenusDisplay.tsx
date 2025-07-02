@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Edit, ChefHat } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -79,7 +78,7 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                   <div className="text-lg font-semibold text-green-600 mt-3">
                     ${calculateMenuCost(menu).toLocaleString()} total 
                     <span className="text-sm font-normal text-gray-500 ml-2">
-                      (${menu.pricePerPerson.toFixed(2)}/person)
+                      (${menu.pricePerPerson.toFixed(2)}/persona)
                     </span>
                   </div>
                 </div>
@@ -91,7 +90,7 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                     className="flex items-center gap-1"
                   >
                     <Edit className="h-4 w-4" />
-                    Edit
+                    Editar
                   </Button>
                   <Button
                     size="sm"
@@ -99,7 +98,7 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                     onClick={() => onRemoveItem(item.id)}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    Remove
+                    Eliminar
                   </Button>
                 </div>
               </div>

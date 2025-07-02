@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Users, DollarSign, Clock, MapPin, Truck } from 'lucide-react';
 import { ActivityTemplate } from '../types/Budget';
@@ -36,17 +35,17 @@ const ActivitiesTemplate: React.FC<ActivitiesTemplateProps> = ({
     return (
       <Card className="border-slate-200">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Edit Activity</CardTitle>
+          <CardTitle className="text-sm font-medium">Editar Actividad</CardTitle>
           {onRemove && (
             <Button variant="ghost" size="sm" onClick={onRemove}>
-              Remove
+              Eliminar
             </Button>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-slate-600">Name</label>
+              <label className="text-xs font-medium text-slate-600">Nombre</label>
               <Input
                 value={editableItem.name}
                 onChange={(e) => onChange?.({ ...editableItem, name: e.target.value })}
@@ -54,7 +53,7 @@ const ActivitiesTemplate: React.FC<ActivitiesTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Location</label>
+              <label className="text-xs font-medium text-slate-600">Ubicación</label>
               <Input
                 value={editableItem.location}
                 onChange={(e) => onChange?.({ ...editableItem, location: e.target.value })}
@@ -62,7 +61,7 @@ const ActivitiesTemplate: React.FC<ActivitiesTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Base Price</label>
+              <label className="text-xs font-medium text-slate-600">Precio Base</label>
               <Input
                 type="number"
                 value={editableItem.basePrice}
@@ -71,7 +70,7 @@ const ActivitiesTemplate: React.FC<ActivitiesTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Duration (hours)</label>
+              <label className="text-xs font-medium text-slate-600">Duración (horas)</label>
               <Input
                 type="number"
                 value={editableItem.duration}
@@ -87,7 +86,7 @@ const ActivitiesTemplate: React.FC<ActivitiesTemplateProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-slate-900">Select Activities</h3>
+      <h3 className="text-lg font-semibold text-slate-900">Seleccionar Actividades</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.map((activity) => (
           <Card key={activity.id} className="hover:shadow-md transition-shadow cursor-pointer border-slate-200">
@@ -128,7 +127,7 @@ const ActivitiesTemplate: React.FC<ActivitiesTemplateProps> = ({
                 className="w-full bg-slate-800 hover:bg-slate-700"
                 onClick={() => onSelect?.(activity)}
               >
-                Select Activity
+                Seleccionar Actividad
               </Button>
             </CardContent>
           </Card>

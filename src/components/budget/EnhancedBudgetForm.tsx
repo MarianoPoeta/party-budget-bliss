@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Badge } from '../ui/badge';
@@ -7,7 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useBudgetWorkflow } from '../../hooks/useBudgetWorkflow';
 import { useBudgetCalculation } from '../../hooks/useBudgetCalculation';
 import { useTemplates } from '../../hooks/useTemplates';
+import { useDebounce } from '../../utils/performance';
+import { ValidationService } from '../../utils/validation';
 import { Menu } from '../../types/Menu';
+import { BudgetItemType } from '../../types/EnhancedBudget';
 import BudgetHeader from './BudgetHeader';
 import MealsTab from './MealsTab';
 import ActivitiesTab from './ActivitiesTab';
@@ -19,7 +21,7 @@ interface EnhancedBudgetFormProps {
   onSave: (budget: any) => void;
   onCancel: () => void;
   initialBudget?: any;
-  menus?: Menu[]; // Add menus prop
+  menus?: Menu[];
 }
 
 const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
@@ -28,7 +30,7 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
   initialBudget,
   menus = []
 }) => {
-  const { templates } = useTemplates();
+  const { templates, error: templatesError } = useTemplates();
   const {
     budget,
     validationErrors,
@@ -36,7 +38,9 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
     removeItem,
     updateItem,
     validateBudget,
-    updateBudgetField
+    updateBudgetField,
+    isDirty,
+    clearValidationErrors
   } = useBudgetWorkflow(initialBudget);
 
   const [searchTerms, setSearchTerms] = useState({
@@ -46,38 +50,84 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
     stay: ''
   });
 
-  // Real-time budget calculation
-  const totalAmount = useBudgetCalculation({
-    selectedMeals: budget.selectedMeals?.map(item => item.template) || [],
-    selectedActivities: budget.selectedActivities?.map(item => item.template) || [],
-    selectedTransport: budget.selectedTransport?.map(item => item.template) || [],
-    selectedStay: budget.selectedStay?.template,
+  // Debounce search terms for better performance
+  const debouncedSearchTerms = useDebounce(searchTerms, 300);
+
+  // Real-time budget calculation with breakdown
+  const budgetCalculation = useBudgetCalculation({
+    selectedMeals: budget.selectedMeals || [],
+    selectedActivities: budget.selectedActivities || [],
+    selectedTransport: budget.selectedTransport || [],
+    selectedStay: budget.selectedStay,
     guestCount: budget.guestCount || 0,
     extras: budget.extras || 0
   });
 
+  // Memoized validation result
+  const validationResult = useMemo(() => {
+    return ValidationService.validateBudget({
+      clientName: budget.clientName || '',
+      eventDate: budget.eventDate || '',
+      guestCount: budget.guestCount || 0,
+      selectedMeals: budget.selectedMeals || [],
+      selectedActivities: budget.selectedActivities || [],
+      selectedTransport: budget.selectedTransport || [],
+      selectedStay: budget.selectedStay
+    });
+  }, [budget]);
+
   // Update total amount in real-time
   useEffect(() => {
-    updateBudgetField('totalAmount', totalAmount);
-  }, [totalAmount, updateBudgetField]);
+    updateBudgetField('totalAmount', budgetCalculation.totalAmount);
+  }, [budgetCalculation.totalAmount, updateBudgetField]);
 
-  const handleSave = () => {
+  // Handle save with validation
+  const handleSave = useCallback(() => {
     const errors = validateBudget();
-    if (errors.filter(e => e.severity === 'error').length === 0) {
-      onSave({ ...budget, totalAmount });
+    const hasErrors = errors.filter(e => e.severity === 'error').length > 0;
+    
+    if (!hasErrors && validationResult.isValid) {
+      onSave({ 
+        ...budget, 
+        totalAmount: budgetCalculation.totalAmount,
+        breakdown: budgetCalculation.breakdown
+      });
     }
-  };
+  }, [validateBudget, validationResult.isValid, budget, budgetCalculation, onSave]);
 
-  const updateSearchTerm = (type: 'meals' | 'activities' | 'transport' | 'stay', value: string) => {
+  // Handle cancel with confirmation if dirty
+  const handleCancel = useCallback(() => {
+    if (isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to cancel?');
+      if (!confirmed) return;
+    }
+    clearValidationErrors();
+    onCancel();
+  }, [isDirty, clearValidationErrors, onCancel]);
+
+  // Update search term with debouncing
+  const updateSearchTerm = useCallback((type: BudgetItemType, value: string) => {
     setSearchTerms(prev => ({ ...prev, [type]: value }));
-  };
+  }, []);
 
-  const hasErrors = validationErrors.some(e => e.severity === 'error');
+  // Memoized error state
+  const hasErrors = useMemo(() => {
+    return validationErrors.some(e => e.severity === 'error') || 
+           !validationResult.isValid;
+  }, [validationErrors, validationResult.isValid]);
+
+  // Memoized item counts for badges
+  const itemCounts = useMemo(() => ({
+    meals: budget.selectedMeals?.length || 0,
+    activities: budget.selectedActivities?.length || 0,
+    transport: budget.selectedTransport?.length || 0,
+    stay: budget.selectedStay ? 1 : 0
+  }), [budget.selectedMeals, budget.selectedActivities, budget.selectedTransport, budget.selectedStay]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Validation Errors */}
-      {validationErrors.length > 0 && (
+      {/* Error Display */}
+      {(validationErrors.length > 0 || templatesError) && (
         <div className="space-y-2">
           {validationErrors.map((error, index) => (
             <Alert key={index} variant={error.severity === 'error' ? 'destructive' : 'default'}>
@@ -85,13 +135,19 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
               <AlertDescription>{error.message}</AlertDescription>
             </Alert>
           ))}
+          {templatesError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{templatesError}</AlertDescription>
+            </Alert>
+          )}
         </div>
       )}
 
       {/* Budget Header */}
       <BudgetHeader
         budget={budget}
-        totalAmount={totalAmount}
+        totalAmount={budgetCalculation.totalAmount}
         updateBudgetField={updateBudgetField}
       />
 
@@ -100,31 +156,31 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="meals" className="flex items-center gap-2">
             Menus
-            {budget.selectedMeals && budget.selectedMeals.length > 0 && (
+            {itemCounts.meals > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {budget.selectedMeals.length}
+                {itemCounts.meals}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="activities" className="flex items-center gap-2">
             Activities
-            {budget.selectedActivities && budget.selectedActivities.length > 0 && (
+            {itemCounts.activities > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {budget.selectedActivities.length}
+                {itemCounts.activities}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="transport" className="flex items-center gap-2">
             Transport
-            {budget.selectedTransport && budget.selectedTransport.length > 0 && (
+            {itemCounts.transport > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {budget.selectedTransport.length}
+                {itemCounts.transport}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="stay" className="flex items-center gap-2">
             Stay
-            {budget.selectedStay && (
+            {itemCounts.stay > 0 && (
               <Badge variant="secondary" className="ml-1">1</Badge>
             )}
           </TabsTrigger>
@@ -134,7 +190,7 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
           <MealsTab
             templates={menus}
             selectedMeals={budget.selectedMeals || []}
-            searchTerm={searchTerms.meals}
+            searchTerm={debouncedSearchTerms.meals}
             guestCount={budget.guestCount || 0}
             onSearchChange={(value) => updateSearchTerm('meals', value)}
             onAddItem={(template) => addItem('meals', template)}
@@ -146,7 +202,7 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
           <ActivitiesTab
             templates={templates.activities || []}
             selectedActivities={budget.selectedActivities || []}
-            searchTerm={searchTerms.activities}
+            searchTerm={debouncedSearchTerms.activities}
             onSearchChange={(value) => updateSearchTerm('activities', value)}
             onAddItem={(template) => addItem('activities', template)}
             onRemoveItem={(itemId) => removeItem('activities', itemId)}
@@ -165,9 +221,10 @@ const EnhancedBudgetForm: React.FC<EnhancedBudgetFormProps> = ({
 
       {/* Action Buttons */}
       <BudgetFormActions
-        onCancel={onCancel}
+        onCancel={handleCancel}
         onSave={handleSave}
         hasErrors={hasErrors}
+        isDirty={isDirty}
       />
     </div>
   );

@@ -103,7 +103,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ChefHat className="h-5 w-5" />
-            Customize Menu: {menu.name}
+            Personalizar Menú: {menu.name}
           </DialogTitle>
         </DialogHeader>
 
@@ -113,13 +113,13 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ChefHat className="h-5 w-5" />
-                Menu Details
+                Detalles del Menú
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="menu-name">Menu Name</Label>
+                  <Label htmlFor="menu-name">Nombre del Menú</Label>
                   <Input
                     id="menu-name"
                     value={editedMenu.name}
@@ -127,7 +127,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="restaurant">Restaurant</Label>
+                  <Label htmlFor="restaurant">Restaurante</Label>
                   <Input
                     id="restaurant"
                     value={editedMenu.restaurant}
@@ -137,7 +137,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
               </div>
               
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={editedMenu.description}
@@ -147,7 +147,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label htmlFor="price-per-person">Price per Person</Label>
+                  <Label htmlFor="price-per-person">Precio por Persona</Label>
                   <Input
                     id="price-per-person"
                     type="number"
@@ -157,7 +157,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="min-people">Min People</Label>
+                  <Label htmlFor="min-people">Minimo de Personas</Label>
                   <Input
                     id="min-people"
                     type="number"
@@ -166,7 +166,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="max-people">Max People</Label>
+                  <Label htmlFor="max-people">Máximo de Personas</Label>
                   <Input
                     id="max-people"
                     type="number"
@@ -183,16 +183,16 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 
               <div className="grid grid-cols-3 gap-4 text-sm bg-slate-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">Guests:</span> 
+                  <span className="font-medium">Invitados:</span> 
                   <Badge variant="outline">{guestCount}</Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  <span className="font-medium">Total Cost:</span> 
+                  <span className="font-medium">Costo Total:</span> 
                   <Badge variant="outline">${(editedMenu.pricePerPerson * guestCount).toFixed(2)}</Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">Items Value:</span> 
+                  <span className="font-medium">Valor de Items:</span> 
                   <Badge variant="outline">${calculateTotalItemsPrice().toFixed(2)}</Badge>
                 </div>
               </div>
@@ -204,7 +204,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ChefHat className="h-5 w-5" />
-                Menu Items ({menuItems.length})
+                Items del Menú ({menuItems.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -215,14 +215,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     <div className="flex-1 grid grid-cols-4 gap-3">
                       <div>
                         <Input
-                          placeholder="Item name"
+                          placeholder="Nombre del Item"
                           value={item.name}
                           onChange={(e) => updateItem(item.id, { name: e.target.value })}
                         />
                       </div>
                       <div>
                         <Input
-                          placeholder="Description"
+                          placeholder="Descripción"
                           value={item.description}
                           onChange={(e) => updateItem(item.id, { description: e.target.value })}
                         />
@@ -232,7 +232,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="Price"
+                          placeholder="Precio"
                           value={item.price}
                           onChange={(e) => updateItem(item.id, { price: parseFloat(e.target.value) || 0 })}
                         />
@@ -259,12 +259,12 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
               <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
                 <div className="flex-1 grid grid-cols-5 gap-3">
                   <Input
-                    placeholder="New item name"
+                    placeholder="Nombre del nuevo item"
                     value={newItem.name || ''}
                     onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
                   />
                   <Input
-                    placeholder="Description"
+                    placeholder="Descripción"
                     value={newItem.description || ''}
                     onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
                   />
@@ -273,7 +273,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Price"
+                      placeholder="Precio"
                       value={newItem.price || ''}
                       onChange={(e) => setNewItem(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                     />
@@ -283,14 +283,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     onValueChange={(value: MenuItem['category']) => setNewItem(prev => ({ ...prev, category: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Category" />
+                      <SelectValue placeholder="Categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="appetizer">Appetizer</SelectItem>
-                      <SelectItem value="main">Main</SelectItem>
-                      <SelectItem value="dessert">Dessert</SelectItem>
-                      <SelectItem value="beverage">Beverage</SelectItem>
-                      <SelectItem value="special">Special</SelectItem>
+                      <SelectItem value="appetizer">Aperitivo</SelectItem>
+                      <SelectItem value="main">Principal</SelectItem>
+                      <SelectItem value="dessert">Postre</SelectItem>
+                      <SelectItem value="beverage">Bebida</SelectItem>
+                      <SelectItem value="special">Especial</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button 
@@ -299,7 +299,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     className="flex items-center gap-1"
                   >
                     <Plus className="h-4 w-4" />
-                    Add
+                    Agregar
                   </Button>
                 </div>
               </div>
@@ -309,11 +309,11 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={handleSave} className="flex items-center gap-2">
               <ChefHat className="h-4 w-4" />
-              Save Customized Menu
+              Guardar Menú Personalizado
             </Button>
           </div>
         </div>

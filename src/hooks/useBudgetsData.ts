@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { localStorage } from '../utils/localStorage';
 
 export interface Budget {
@@ -59,35 +58,78 @@ export const useBudgetsData = () => {
 
   // Load budgets from localStorage on mount
   useEffect(() => {
-    try {
-      const storedBudgets = localStorage.get(BUDGETS_STORAGE_KEY, defaultBudgets);
-      setBudgets(storedBudgets);
-    } catch (err) {
-      setError('Failed to load budgets');
-      setBudgets(defaultBudgets);
-    } finally {
-      setIsLoading(false);
-    }
+    const loadBudgets = () => {
+      try {
+        const storedBudgets = localStorage.get(BUDGETS_STORAGE_KEY, defaultBudgets);
+        setBudgets(storedBudgets);
+        setError(null);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load budgets';
+        setError(errorMessage);
+        setBudgets(defaultBudgets);
+        console.error('Error loading budgets:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBudgets();
   }, []);
 
   // Save budgets to localStorage whenever budgets change
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.set(BUDGETS_STORAGE_KEY, budgets);
+    if (!isLoading && budgets.length > 0) {
+      try {
+        localStorage.set(BUDGETS_STORAGE_KEY, budgets);
+      } catch (err) {
+        console.error('Error saving budgets:', err);
+        setError('Failed to save budgets');
+      }
     }
   }, [budgets, isLoading]);
+
+  // Memoized computed values
+  const budgetStats = useMemo(() => {
+    const totalRevenue = budgets
+      .filter(b => b.status === 'paid')
+      .reduce((sum, b) => sum + b.totalAmount, 0);
+    
+    const pendingRevenue = budgets
+      .filter(b => b.status === 'pending')
+      .reduce((sum, b) => sum + b.totalAmount, 0);
+    
+    const totalGuests = budgets.reduce((sum, b) => sum + b.guestCount, 0);
+    
+    const statusCounts = {
+      all: budgets.length,
+      pending: budgets.filter(b => b.status === 'pending').length,
+      paid: budgets.filter(b => b.status === 'paid').length,
+      canceled: budgets.filter(b => b.status === 'canceled').length,
+    };
+
+    return {
+      totalRevenue,
+      pendingRevenue,
+      totalGuests,
+      statusCounts
+    };
+  }, [budgets]);
+
+  const generateBudgetId = useCallback(() => {
+    return `budget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
 
   const addBudget = useCallback((budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newBudget: Budget = {
       ...budget,
-      id: `budget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateBudgetId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
     setBudgets(prev => [newBudget, ...prev]);
     return newBudget;
-  }, []);
+  }, [generateBudgetId]);
 
   const updateBudget = useCallback((id: string, updates: Partial<Budget>) => {
     setBudgets(prev => prev.map(budget => 
@@ -105,13 +147,19 @@ export const useBudgetsData = () => {
     return budgets.find(budget => budget.id === id);
   }, [budgets]);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return {
     budgets,
     isLoading,
     error,
+    budgetStats,
     addBudget,
     updateBudget,
     deleteBudget,
-    getBudgetById
+    getBudgetById,
+    clearError
   };
 };

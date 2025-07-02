@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/card';
@@ -33,7 +32,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
         onClick={onToggle}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-900">Basic Information</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Información Básica</h2>
           {isOpen ? (
             <ChevronDown className="h-5 w-5 text-slate-600" />
           ) : (
@@ -46,18 +45,18 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="clientName">Client Name</Label>
+              <Label htmlFor="clientName">Nombre del Cliente</Label>
               <Input
                 id="clientName"
                 type="text"
                 value={clientName}
                 onChange={(e) => onClientNameChange(e.target.value)}
-                placeholder="Enter client name"
+                placeholder="Ingresa el nombre del cliente"
               />
             </div>
             
             <div>
-              <Label htmlFor="eventDate">Event Date</Label>
+              <Label htmlFor="eventDate">Fecha del Evento</Label>
               <Input
                 id="eventDate"
                 type="date"
@@ -67,13 +66,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
             </div>
             
             <div>
-              <Label htmlFor="guestCount">Guest Count</Label>
+              <Label htmlFor="guestCount">Cantidad de Invitados</Label>
               <Input
                 id="guestCount"
                 type="number"
                 value={guestCount || ''}
                 onChange={(e) => onGuestCountChange(parseInt(e.target.value) || 0)}
-                placeholder="Number of guests"
+                placeholder="Número de invitados"
                 min="1"
               />
             </div>

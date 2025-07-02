@@ -1,319 +1,379 @@
-
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
+import React, { useState } from 'react';
 import { Menu, MenuItem } from '../types/Menu';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Plus, X, ChefHat, Save, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface MenuFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  menu?: Menu | null;
+  menu?: Menu;
+  onSubmit: (menu: Menu) => void;
+  onCancel?: () => void;
 }
 
-const MenuForm = ({ isOpen, onClose, menu }: MenuFormProps) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'lunch' as Menu['type'],
-    pricePerPerson: 0,
-    minPeople: 1,
-    maxPeople: 10,
-    restaurant: '',
-    isActive: true,
-  });
-
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [newItem, setNewItem] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    category: 'main' as MenuItem['category'],
-  });
-
-  useEffect(() => {
-    if (menu) {
-      setFormData({
-        name: menu.name,
-        description: menu.description,
-        type: menu.type,
-        pricePerPerson: menu.pricePerPerson,
-        minPeople: menu.minPeople,
-        maxPeople: menu.maxPeople,
-        restaurant: menu.restaurant,
-        isActive: menu.isActive,
-      });
-      setItems([...menu.items]);
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        type: 'lunch',
-        pricePerPerson: 0,
-        minPeople: 1,
-        maxPeople: 10,
-        restaurant: '',
-        isActive: true,
-      });
-      setItems([]);
+const MenuForm: React.FC<MenuFormProps> = ({ menu, onSubmit, onCancel }) => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<Menu>(
+    menu || {
+      id: '',
+      name: '',
+      description: '',
+      type: 'dinner',
+      pricePerPerson: 0,
+      minPeople: 1,
+      maxPeople: 100,
+      items: [],
+      restaurant: '',
+      isActive: true,
     }
-  }, [menu, isOpen]);
+  );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const menuData = { ...formData, items };
-    console.log(menu ? 'Updating menu:' : 'Creating menu:', menuData);
-    onClose();
+  const categoryColors = {
+    appetizer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    main: 'bg-blue-50 text-blue-700 border-blue-200',
+    dessert: 'bg-pink-50 text-pink-700 border-pink-200',
+    beverage: 'bg-amber-50 text-amber-700 border-amber-200',
+    special: 'bg-violet-50 text-violet-700 border-violet-200',
+  };
+
+  const handleInputChange = (field: keyof Menu, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const addMenuItem = () => {
-    if (newItem.name.trim()) {
-      const menuItem: MenuItem = {
-        id: Date.now().toString(),
-        ...newItem,
-      };
-      setItems(prev => [...prev, menuItem]);
-      setNewItem({
-        name: '',
-        description: '',
-        price: 0,
-        category: 'main',
-      });
-    }
+    const newItem: MenuItem = {
+      id: Date.now().toString(),
+      name: '',
+      description: '',
+      price: 0,
+      category: 'main'
+    };
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+  };
+
+  const updateMenuItem = (itemId: string, updates: Partial<MenuItem>) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map(item =>
+        item.id === itemId ? { ...item, ...updates } : item
+      )
+    }));
   };
 
   const removeMenuItem = (itemId: string) => {
-    setItems(prev => prev.filter(item => item.id !== itemId));
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== itemId)
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.id) {
+      formData.id = Date.now().toString();
+    }
+    onSubmit(formData);
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      navigate('/menus');
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {menu ? 'Edit Menu' : 'Add New Menu'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="Menu name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type *
-              </label>
-              <select
-                required
-                value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as Menu['type'] }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-              >
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-                <option value="brunch">Brunch</option>
-                <option value="cocktail">Cocktail</option>
-                <option value="catering">Catering</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price per Person ($) *
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                value={formData.pricePerPerson}
-                onChange={(e) => setFormData(prev => ({ ...prev, pricePerPerson: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Restaurant *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.restaurant}
-                onChange={(e) => setFormData(prev => ({ ...prev, restaurant: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="Restaurant name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Min People *
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={formData.minPeople}
-                onChange={(e) => setFormData(prev => ({ ...prev, minPeople: parseInt(e.target.value) || 1 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="1"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max People *
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={formData.maxPeople}
-                onChange={(e) => setFormData(prev => ({ ...prev, maxPeople: parseInt(e.target.value) || 1 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="10"
-              />
-            </div>
-          </div>
-
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+            className="text-slate-600 hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description *
-            </label>
-            <textarea
-              required
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-              placeholder="Describe the menu..."
-            />
+            <h1 className="text-3xl font-bold text-slate-900">
+              {menu ? 'Edit Menu' : 'Create New Menu'}
+            </h1>
+            <p className="text-slate-600 mt-1">
+              {menu ? 'Update your menu details' : 'Design a new menu for your events'}
+            </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <ChefHat className="h-8 w-8 text-slate-600" />
+        </div>
+      </div>
 
-          {/* Menu Items Section */}
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Menu Items</h3>
-            
-            {/* Add New Item Form */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Add Menu Item</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <input
-                  type="text"
-                  value={newItem.name}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                  placeholder="Item name"
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Basic Information */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-slate-900">Información Básica</CardTitle>
+            <p className="text-slate-600">Configura los detalles fundamentales de tu menú</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium">Nombre del Menú *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="ej., Cena Premium de Boda"
+                  className="mt-1"
+                  required
                 />
-                <select
-                  value={newItem.category}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value as MenuItem['category'] }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                >
-                  <option value="appetizer">Appetizer</option>
-                  <option value="main">Main</option>
-                  <option value="dessert">Dessert</option>
-                  <option value="beverage">Beverage</option>
-                  <option value="special">Special</option>
-                </select>
-                <input
+              </div>
+              <div>
+                <Label htmlFor="type" className="text-sm font-medium">Tipo de Menú *</Label>
+                <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="breakfast">Desayuno</SelectItem>
+                    <SelectItem value="lunch">Almuerzo</SelectItem>
+                    <SelectItem value="dinner">Cena</SelectItem>
+                    <SelectItem value="brunch">Brunch</SelectItem>
+                    <SelectItem value="cocktail">Cóctel</SelectItem>
+                    <SelectItem value="catering">Catering</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="restaurant" className="text-sm font-medium">Restaurante *</Label>
+                <Input
+                  id="restaurant"
+                  value={formData.restaurant}
+                  onChange={(e) => handleInputChange('restaurant', e.target.value)}
+                  placeholder="Nombre del restaurante"
+                  className="mt-1"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="pricePerPerson" className="text-sm font-medium">Precio por Persona ($) *</Label>
+                <Input
+                  id="pricePerPerson"
                   type="number"
-                  min="0"
-                  step="0.01"
-                  value={newItem.price}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                  placeholder="Price"
+                  value={formData.pricePerPerson}
+                  onChange={(e) => handleInputChange('pricePerPerson', parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="mt-1"
+                  required
                 />
-                <Button type="button" onClick={addMenuItem} variant="outline">
-                  Add Item
+              </div>
+              <div>
+                <Label htmlFor="minPeople" className="text-sm font-medium">Mínimo de Personas *</Label>
+                <Input
+                  id="minPeople"
+                  type="number"
+                  value={formData.minPeople}
+                  onChange={(e) => handleInputChange('minPeople', parseInt(e.target.value) || 1)}
+                  placeholder="1"
+                  className="mt-1"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxPeople" className="text-sm font-medium">Máximo de Personas *</Label>
+                <Input
+                  id="maxPeople"
+                  type="number"
+                  value={formData.maxPeople}
+                  onChange={(e) => handleInputChange('maxPeople', parseInt(e.target.value) || 1)}
+                  placeholder="100"
+                  className="mt-1"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="description" className="text-sm font-medium">Descripción</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Describe tu menú y qué lo hace especial..."
+                rows={4}
+                className="mt-1"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Menu Items */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900">Elementos del Menú</CardTitle>
+                <p className="text-slate-600">Agrega los platos y bebidas a tu menú</p>
+              </div>
+              <Button 
+                type="button"
+                onClick={addMenuItem}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Elemento
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {formData.items.length === 0 ? (
+              <div className="text-center py-12">
+                <ChefHat className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">Aún no hay elementos</h3>
+                <p className="text-slate-600 mb-4">Comienza a construir tu menú agregando algunos elementos deliciosos</p>
+                <Button 
+                  type="button"
+                  onClick={addMenuItem}
+                  variant="outline"
+                  className="border-slate-300"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Primer Elemento
                 </Button>
               </div>
-              <textarea
-                rows={2}
-                value={newItem.description}
-                onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="Item description"
-              />
-            </div>
-
-            {/* Menu Items List */}
-            {items.length > 0 && (
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium">{item.name}</span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          item.category === 'appetizer' ? 'bg-green-100 text-green-800' :
-                          item.category === 'main' ? 'bg-blue-100 text-blue-800' :
-                          item.category === 'dessert' ? 'bg-pink-100 text-pink-800' :
-                          item.category === 'beverage' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-purple-100 text-purple-800'
-                        }`}>
-                          {item.category}
-                        </span>
-                        <span className="text-sm font-medium text-gray-900">${item.price}</span>
-                      </div>
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      )}
+            ) : (
+              <div className="space-y-6">
+                {formData.items.map((item, index) => (
+                  <div key={item.id} className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-slate-900">Elemento {index + 1}</h4>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeMenuItem(item.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeMenuItem(item.id)}
-                      className="text-red-500 hover:text-red-700 ml-3"
-                    >
-                      Remove
-                    </button>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Nombre *</Label>
+                        <Input
+                          value={item.name}
+                          onChange={(e) => updateMenuItem(item.id, { name: e.target.value })}
+                          placeholder="Nombre del elemento"
+                          className="mt-1"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Categoría</Label>
+                        <Select value={item.category} onValueChange={(value) => updateMenuItem(item.id, { category: value as MenuItem['category'] })}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="appetizer">Aperitivo</SelectItem>
+                            <SelectItem value="main">Principal</SelectItem>
+                            <SelectItem value="dessert">Postre</SelectItem>
+                            <SelectItem value="beverage">Bebida</SelectItem>
+                            <SelectItem value="special">Especial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Precio ($)</Label>
+                        <Input
+                          type="number"
+                          value={item.price}
+                          onChange={(e) => updateMenuItem(item.id, { price: parseFloat(e.target.value) || 0 })}
+                          placeholder="0.00"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Badge className={`${categoryColors[item.category]} font-medium`}>
+                          {item.category}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <Label className="text-sm font-medium">Descripción</Label>
+                      <Textarea
+                        value={item.description}
+                        onChange={(e) => updateMenuItem(item.id, { description: e.target.value })}
+                        placeholder="Describe este elemento..."
+                        rows={2}
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex items-center">
-            <label className="flex items-center cursor-pointer">
+        {/* Menu Status */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-slate-900">Menu Status</CardTitle>
+            <p className="text-slate-600">Control the availability of this menu</p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
+                id="isActive"
                 checked={formData.isActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="sr-only"
+                onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                className="rounded border-slate-300 text-slate-600 focus:ring-slate-500"
               />
-              <div className={`relative w-10 h-6 rounded-full transition-colors ${formData.isActive ? 'bg-slate-600' : 'bg-gray-300'}`}>
-                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${formData.isActive ? 'translate-x-4' : 'translate-x-0'}`} />
-              </div>
-              <span className="ml-3 text-sm text-gray-700">Active</span>
-            </label>
-          </div>
+              <Label htmlFor="isActive" className="text-sm font-medium">
+                Active Menu
+              </Label>
+            </div>
+            <p className="text-sm text-slate-500 mt-2">
+              Active menus are available for selection in budget creation
+            </p>
+          </CardContent>
+        </Card>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {menu ? 'Update' : 'Create'} Menu
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4 pt-6 border-t border-slate-200">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            size="lg"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            size="lg"
+            className="bg-slate-800 hover:bg-slate-700"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {menu ? 'Update Menu' : 'Create Menu'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

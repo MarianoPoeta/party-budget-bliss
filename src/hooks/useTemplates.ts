@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MealTemplate, ActivityTemplate, TransportTemplate, StayTemplate } from '../types/Budget';
 import { Menu } from '../types/Menu';
 
@@ -84,7 +84,7 @@ const mockActivities: ActivityTemplate[] = [
   {
     id: '1',
     name: 'Rafting Adventure',
-    description: 'Exciting white water rafting experience',
+    description: 'Exciting white water rafting experience on the Mendoza River',
     basePrice: 80,
     duration: 4,
     maxCapacity: 16,
@@ -96,13 +96,60 @@ const mockActivities: ActivityTemplate[] = [
   {
     id: '2',
     name: 'Casino Night',
-    description: 'VIP casino experience with dinner',
+    description: 'VIP casino experience with dinner and entertainment',
     basePrice: 120,
     duration: 6,
     maxCapacity: 20,
     category: 'nightlife',
     transportRequired: false,
     location: 'Casino Central'
+  },
+  {
+    id: '3',
+    name: 'Wine Valley Tour',
+    description: 'Guided tour through the famous Mendoza wine region',
+    basePrice: 95,
+    duration: 8,
+    maxCapacity: 12,
+    category: 'cultural',
+    transportRequired: true,
+    transportCost: 30,
+    location: 'Valle de Uco'
+  },
+  {
+    id: '4',
+    name: 'Mountain Hiking',
+    description: 'Scenic hiking adventure in the Andes mountains',
+    basePrice: 65,
+    duration: 6,
+    maxCapacity: 15,
+    category: 'outdoor',
+    transportRequired: true,
+    transportCost: 20,
+    location: 'Cerro Aconcagua'
+  },
+  {
+    id: '5',
+    name: 'Spa & Wellness Day',
+    description: 'Relaxing spa treatment and wellness activities',
+    basePrice: 150,
+    duration: 5,
+    maxCapacity: 10,
+    category: 'indoor',
+    transportRequired: false,
+    location: 'Luxury Spa Resort'
+  },
+  {
+    id: '6',
+    name: 'Beach Club Party',
+    description: 'Exclusive beach club experience with pool and entertainment',
+    basePrice: 110,
+    duration: 8,
+    maxCapacity: 25,
+    category: 'nightlife',
+    transportRequired: true,
+    transportCost: 35,
+    location: 'Playa del Sol'
   }
 ];
 
@@ -110,7 +157,7 @@ const mockTransport: TransportTemplate[] = [
   {
     id: '1',
     name: 'Luxury Minivan',
-    description: 'Comfortable transport for small groups',
+    description: 'Comfortable transport for small groups with premium amenities',
     vehicleType: 'minivan',
     capacity: 8,
     pricePerHour: 45,
@@ -120,11 +167,51 @@ const mockTransport: TransportTemplate[] = [
   {
     id: '2',
     name: 'Party Bus',
-    description: 'Large bus with entertainment system',
+    description: 'Large bus with entertainment system, perfect for group celebrations',
     vehicleType: 'bus',
     capacity: 25,
     pricePerHour: 120,
     pricePerKm: 3,
+    includesDriver: true
+  },
+  {
+    id: '3',
+    name: 'Luxury Limousine',
+    description: 'Premium limousine service for special occasions',
+    vehicleType: 'limousine',
+    capacity: 6,
+    pricePerHour: 80,
+    pricePerKm: 4,
+    includesDriver: true
+  },
+  {
+    id: '4',
+    name: 'Adventure SUV',
+    description: 'Rugged SUV perfect for outdoor activities and off-road adventures',
+    vehicleType: 'car',
+    capacity: 6,
+    pricePerHour: 35,
+    pricePerKm: 1.5,
+    includesDriver: true
+  },
+  {
+    id: '5',
+    name: 'Speedboat Charter',
+    description: 'Exclusive boat service for waterfront activities and scenic tours',
+    vehicleType: 'boat',
+    capacity: 12,
+    pricePerHour: 150,
+    pricePerKm: 5,
+    includesDriver: true
+  },
+  {
+    id: '6',
+    name: 'Shuttle Service',
+    description: 'Reliable shuttle for airport transfers and group transportation',
+    vehicleType: 'bus',
+    capacity: 20,
+    pricePerHour: 90,
+    pricePerKm: 2.5,
     includesDriver: true
   }
 ];
@@ -154,59 +241,140 @@ const mockStay: StayTemplate[] = [
   }
 ];
 
+export type TemplateType = 'meals' | 'activities' | 'transport' | 'stay';
+
+export interface TemplatesState {
+  meals: MealTemplate[];
+  activities: ActivityTemplate[];
+  transport: TransportTemplate[];
+  stay: StayTemplate[];
+}
+
 export const useTemplates = () => {
-  const [templates, setTemplates] = useState({
+  const [templates, setTemplates] = useState<TemplatesState>({
     meals: mockMeals,
     activities: mockActivities,
     transport: mockTransport,
     stay: mockStay
   });
 
-  const [menus, setMenus] = useState(mockMenus);
+  const [menus, setMenus] = useState<Menu[]>(mockMenus);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const addTemplate = (type: string, template: any) => {
+  // Memoized template counts
+  const templateCounts = useMemo(() => ({
+    meals: templates.meals.length,
+    activities: templates.activities.length,
+    transport: templates.transport.length,
+    stay: templates.stay.length,
+    menus: menus.length
+  }), [templates, menus]);
+
+  const generateTemplateId = useCallback(() => {
+    return Date.now().toString();
+  }, []);
+
+  const addTemplate = useCallback(<T extends MealTemplate | ActivityTemplate | TransportTemplate | StayTemplate>(
+    type: TemplateType, 
+    template: Omit<T, 'id'>
+  ) => {
+    try {
+      const newTemplate = { ...template, id: generateTemplateId() } as T;
     setTemplates(prev => ({
       ...prev,
-      [type]: [...prev[type as keyof typeof prev], { ...template, id: Date.now().toString() }]
-    }));
-  };
+        [type]: [...prev[type], newTemplate]
+      }));
+      return newTemplate;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : `Failed to add ${type} template`;
+      setError(errorMessage);
+      console.error(`Error adding ${type} template:`, err);
+      return null;
+    }
+  }, [generateTemplateId]);
 
-  const updateTemplate = (type: string, id: string, updated: any) => {
+  const updateTemplate = useCallback(<T extends MealTemplate | ActivityTemplate | TransportTemplate | StayTemplate>(
+    type: TemplateType, 
+    id: string, 
+    updated: Partial<T>
+  ) => {
+    try {
     setTemplates(prev => ({
       ...prev,
-      [type]: (prev[type as keyof typeof prev] as any[]).map(item => 
+        [type]: (prev[type] as T[]).map(item => 
         item.id === id ? { ...item, ...updated } : item
       )
     }));
-  };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : `Failed to update ${type} template`;
+      setError(errorMessage);
+      console.error(`Error updating ${type} template:`, err);
+    }
+  }, []);
 
-  const deleteTemplate = (type: string, id: string) => {
+  const deleteTemplate = useCallback((type: TemplateType, id: string) => {
+    try {
     setTemplates(prev => ({
       ...prev,
-      [type]: (prev[type as keyof typeof prev] as any[]).filter(item => item.id !== id)
+        [type]: (prev[type] as any[]).filter(item => item.id !== id)
     }));
-  };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : `Failed to delete ${type} template`;
+      setError(errorMessage);
+      console.error(`Error deleting ${type} template:`, err);
+    }
+  }, []);
 
-  const addMenu = (menu: Menu) => {
-    setMenus(prev => [...prev, { ...menu, id: Date.now().toString() }]);
-  };
+  const addMenu = useCallback((menu: Omit<Menu, 'id'>) => {
+    try {
+      const newMenu = { ...menu, id: generateTemplateId() };
+      setMenus(prev => [...prev, newMenu]);
+      return newMenu;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add menu';
+      setError(errorMessage);
+      console.error('Error adding menu:', err);
+      return null;
+    }
+  }, [generateTemplateId]);
 
-  const updateMenu = (id: string, updated: Menu) => {
+  const updateMenu = useCallback((id: string, updated: Partial<Menu>) => {
+    try {
     setMenus(prev => prev.map(menu => menu.id === id ? { ...menu, ...updated } : menu));
-  };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update menu';
+      setError(errorMessage);
+      console.error('Error updating menu:', err);
+    }
+  }, []);
 
-  const deleteMenu = (id: string) => {
+  const deleteMenu = useCallback((id: string) => {
+    try {
     setMenus(prev => prev.filter(menu => menu.id !== id));
-  };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete menu';
+      setError(errorMessage);
+      console.error('Error deleting menu:', err);
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   return {
     templates,
     menus,
+    templateCounts,
+    isLoading,
+    error,
     addTemplate,
     updateTemplate,
     deleteTemplate,
     addMenu,
     updateMenu,
-    deleteMenu
+    deleteMenu,
+    clearError
   };
 };

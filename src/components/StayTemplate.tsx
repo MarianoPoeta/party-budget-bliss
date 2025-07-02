@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MapPin, Users, DollarSign, Star, Bed } from 'lucide-react';
 import { StayTemplate as StayTemplateType } from '../types/Budget';
@@ -36,17 +35,17 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
     return (
       <Card className="border-slate-200">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium">Edit Stay</CardTitle>
+          <CardTitle className="text-sm font-medium">Editar Alojamiento</CardTitle>
           {onRemove && (
             <Button variant="ghost" size="sm" onClick={onRemove}>
-              Remove
+              Eliminar
             </Button>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-slate-600">Name</label>
+              <label className="text-xs font-medium text-slate-600">Nombre</label>
               <Input
                 value={editableItem.name}
                 onChange={(e) => onChange?.({ ...editableItem, name: e.target.value })}
@@ -54,7 +53,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Location</label>
+              <label className="text-xs font-medium text-slate-600">Ubicación</label>
               <Input
                 value={editableItem.location}
                 onChange={(e) => onChange?.({ ...editableItem, location: e.target.value })}
@@ -62,7 +61,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Price per Night</label>
+              <label className="text-xs font-medium text-slate-600">Precio por Noche</label>
               <Input
                 type="number"
                 value={editableItem.pricePerNight}
@@ -71,7 +70,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Max Occupancy</label>
+              <label className="text-xs font-medium text-slate-600">Ocupación Máxima</label>
               <Input
                 type="number"
                 value={editableItem.maxOccupancy}
@@ -87,7 +86,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-slate-900">Select Stay</h3>
+      <h3 className="text-lg font-semibold text-slate-900">Seleccionar Alojamiento</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.map((stay) => (
           <Card key={stay.id} className="hover:shadow-md transition-shadow cursor-pointer border-slate-200">
@@ -107,7 +106,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
               <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 mb-4">
                 <div className="flex items-center">
                   <DollarSign className="h-3 w-3 mr-1" />
-                  ${stay.pricePerNight}/night
+                  ${stay.pricePerNight}/noche
                 </div>
                 <div className="flex items-center">
                   <Users className="h-3 w-3 mr-1" />
@@ -115,7 +114,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
                 </div>
                 <div className="flex items-center">
                   <Star className="h-3 w-3 mr-1" />
-                  {stay.rating}/5 stars
+                  {stay.rating}/5 estrellas
                 </div>
                 <div className="flex items-center">
                   <MapPin className="h-3 w-3 mr-1" />
@@ -124,7 +123,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
               </div>
 
               <div className="mb-4">
-                <p className="text-xs text-slate-500 mb-1">Amenities:</p>
+                <p className="text-xs text-slate-500 mb-1">Amenidades:</p>
                 <div className="flex flex-wrap gap-1">
                   {stay.amenities.slice(0, 3).map((amenity, index) => (
                     <span
@@ -136,7 +135,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
                   ))}
                   {stay.amenities.length > 3 && (
                     <span className="px-2 py-1 bg-gray-50 text-gray-500 rounded text-xs">
-                      +{stay.amenities.length - 3} more
+                      +{stay.amenities.length - 3} más
                     </span>
                   )}
                 </div>
@@ -147,7 +146,7 @@ const StayTemplate: React.FC<StayTemplateProps> = ({
                 className="w-full bg-slate-800 hover:bg-slate-700"
                 onClick={() => onSelect?.(stay)}
               >
-                Select Stay
+                Seleccionar Alojamiento
               </Button>
             </CardContent>
           </Card>

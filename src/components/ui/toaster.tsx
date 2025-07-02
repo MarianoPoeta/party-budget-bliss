@@ -1,33 +1,51 @@
-import { useToast } from "@/hooks/use-toast"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
+import { useEffect } from 'react';
+import { useStore } from '../../store';
+import { X, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 
-export function Toaster() {
-  const { toasts } = useToast()
+const typeStyles = {
+  success: 'bg-green-600 text-white',
+  error: 'bg-red-600 text-white',
+  info: 'bg-blue-600 text-white',
+  warning: 'bg-yellow-500 text-white',
+};
+const typeIcons = {
+  success: <CheckCircle className="h-5 w-5 mr-2" />,
+  error: <X className="h-5 w-5 mr-2" />,
+  info: <Info className="h-5 w-5 mr-2" />,
+  warning: <AlertTriangle className="h-5 w-5 mr-2" />,
+};
+
+export default function Toaster() {
+  const toasts = useStore(s => s.toasts);
+  const removeToast = useStore(s => s.removeToast);
+
+  useEffect(() => {
+    toasts.forEach(toast => {
+      if (toast.duration !== 0) {
+        const timeout = setTimeout(() => removeToast(toast.id), toast.duration || 3500);
+        return () => clearTimeout(timeout);
+      }
+    });
+  }, [toasts, removeToast]);
 
   return (
-    <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && (
-                <ToastDescription>{description}</ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        )
-      })}
-      <ToastViewport />
-    </ToastProvider>
-  )
+    <div className="fixed z-50 top-4 right-4 flex flex-col gap-3">
+      {toasts.map(toast => (
+        <div
+          key={toast.id}
+          className={`flex items-center px-4 py-3 rounded-lg shadow-lg min-w-[220px] max-w-xs ${typeStyles[toast.type]}`}
+        >
+          {typeIcons[toast.type]}
+          <span className="flex-1 text-sm">{toast.message}</span>
+          <button
+            className="ml-2 text-white/80 hover:text-white"
+            onClick={() => removeToast(toast.id)}
+            aria-label="Descartar notificación"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
 }

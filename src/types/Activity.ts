@@ -1,3 +1,4 @@
+import { ProductRequirement } from './Product';
 
 export interface Activity {
   id: string;
@@ -6,9 +7,12 @@ export interface Activity {
   basePrice: number;
   duration: number; // in hours
   maxCapacity: number;
-  category: 'outdoor' | 'indoor' | 'nightlife' | 'dining' | 'adventure' | 'cultural';
+  category: 'adventure' | 'outdoor' | 'nightlife' | 'dining' | 'indoor' | 'cultural';
   transportRequired: boolean;
   transportCost?: number;
   location: string;
   isActive: boolean;
+  productRequirements?: ProductRequirement[];
+  logisticsNotes?: string;
+  cookNotes?: string;
 }

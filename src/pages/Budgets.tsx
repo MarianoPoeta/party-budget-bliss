@@ -1,295 +1,424 @@
-
-import { useState, useMemo } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
-import Layout from '../components/Layout';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '../store';
+import type { Budget } from '../store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
-  ResponsiveTable, 
-  ResponsiveTableHeader, 
-  ResponsiveTableBody, 
-  ResponsiveTableRow, 
-  ResponsiveTableCell,
-  ResponsiveTableHeaderCell
-} from '../components/ui/responsive-table';
-import BudgetsSummaryCards from '../components/budget/BudgetsSummaryCards';
-import RevenueBreakdownCard from '../components/budget/RevenueBreakdownCard';
-import { useBudgetsData } from '../hooks/useBudgetsData';
-import { BudgetStatus } from '../components/BudgetCard';
-import LoadingSpinner from '../components/LoadingSpinner';
+  Plus, 
+  Search, 
+  Filter, 
+  Calendar, 
+  DollarSign, 
+  Users, 
+  TrendingUp, 
+  TrendingDown,
+  Eye,
+  Edit,
+  Trash2,
+  Download,
+  MoreHorizontal
+} from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '../components/ui/dropdown-menu';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import Layout from '../components/Layout';
+import { RoleSelector } from '../components/RoleSelector';
 
 const Budgets = () => {
   const navigate = useNavigate();
-  const { budgets, isLoading, error } = useBudgetsData();
-  
-  // Local state for filtering
+  const { budgets, deleteBudget } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<BudgetStatus | 'all'>('all');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Computed values
-  const { filteredBudgets, statusCounts, totalRevenue, pendingRevenue } = useMemo(() => {
-    // Filter budgets based on search and filters
+  // Filter and sort budgets
+  const filteredBudgets = useMemo(() => {
     let filtered = budgets.filter(budget => {
       const matchesSearch = budget.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           budget.activities.some(activity => activity.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+                           budget.eventType.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || budget.status === statusFilter;
-      
-      const matchesDateRange = (!dateRange.start || budget.eventDate >= dateRange.start) &&
-                              (!dateRange.end || budget.eventDate <= dateRange.end);
-      
-      return matchesSearch && matchesStatus && matchesDateRange;
+      return matchesSearch && matchesStatus;
     });
 
-    // Calculate status counts
-    const counts = {
-      all: budgets.length,
-      pending: budgets.filter(b => b.status === 'pending').length,
-      paid: budgets.filter(b => b.status === 'paid').length,
-      canceled: budgets.filter(b => b.status === 'canceled').length,
-    };
+    // Sort budgets
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
+        case 'amount':
+          return b.totalAmount - a.totalAmount;
+        case 'guests':
+          return b.guestCount - a.guestCount;
+        case 'name':
+          return a.clientName.localeCompare(b.clientName);
+        default:
+          return 0;
+      }
+    });
 
-    // Calculate revenue
-    const total = budgets
-      .filter(b => b.status === 'paid')
-      .reduce((sum, b) => sum + b.totalAmount, 0);
-    
-    const pending = budgets
-      .filter(b => b.status === 'pending')
-      .reduce((sum, b) => sum + b.totalAmount, 0);
+    return filtered;
+  }, [budgets, searchTerm, statusFilter, sortBy]);
 
-    return {
-      filteredBudgets: filtered,
-      statusCounts: counts,
-      totalRevenue: total,
-      pendingRevenue: pending
-    };
-  }, [budgets, searchTerm, statusFilter, dateRange]);
-
-  const handleBudgetClick = (budgetId: string) => {
-    navigate(`/budgets/${budgetId}`);
+  const handleDelete = async (budgetId: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este presupuesto?')) {
+      setIsLoading(true);
+      try {
+        deleteBudget(budgetId);
+        // Show success message
+      } catch (error) {
+        console.error('Error deleting budget:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
-  const getStatusBadge = (status: BudgetStatus) => {
+  const getStatusColor = (status: string) => {
+    const colors = {
+      draft: 'bg-gray-100 text-gray-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-blue-100 text-blue-800',
+      reserva: 'bg-indigo-100 text-indigo-800',
+      completed: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800'
+    };
+    return colors[status as keyof typeof colors] || colors.draft;
+  };
+
+  const getStatusIcon = (status: string) => {
+    const icons = {
+      draft: '📝',
+      pending: '⏳',
+      approved: '✅',
+      reserva: '📅',
+      completed: '🎉',
+      rejected: '❌'
+    };
+    return icons[status as keyof typeof icons] || '📝';
+  };
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const total = budgets.length;
+    const completed = budgets.filter(b => b.status === 'completed').length;
+    const pending = budgets.filter(b => b.status === 'pending').length;
+    const totalRevenue = budgets.reduce((sum, b) => sum + b.totalAmount, 0);
+    const avgGuests = budgets.length > 0 
+      ? Math.round(budgets.reduce((sum, b) => sum + b.guestCount, 0) / budgets.length)
+      : 0;
+    const avgAmount = budgets.length > 0 
+      ? Math.round(budgets.reduce((sum, b) => sum + b.totalAmount, 0) / budgets.length)
+      : 0;
+
+    return { total, completed, pending, totalRevenue, avgGuests, avgAmount };
+  }, [budgets]);
+
+  const getStatusBadge = (status: string) => {
     const variants = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      paid: 'bg-green-100 text-green-800 border-green-200',
-      canceled: 'bg-red-100 text-red-800 border-red-200'
+      draft: 'bg-gray-100 text-gray-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-blue-100 text-blue-800',
+      reserva: 'bg-indigo-100 text-indigo-800',
+      completed: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800'
     };
     
+    const labels = {
+      draft: 'Borrador',
+      pending: 'Pendiente',
+      approved: 'Aprobado',
+      reserva: 'Reserva',
+      completed: 'Completado',
+      rejected: 'Rechazado'
+    };
+
     return (
-      <Badge className={variants[status]} variant="outline">
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <Badge className={variants[status as keyof typeof variants]}>
+        {labels[status as keyof typeof labels]}
       </Badge>
     );
   };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" text="Loading budgets..." />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-red-600">Error Loading Budgets</CardTitle>
-              <CardDescription>{error}</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Budgets</h1>
-            <p className="text-slate-600">Manage all your bachelor party budgets</p>
+            <h1 className="text-3xl font-bold text-slate-900">Presupuestos</h1>
+            <p className="text-slate-600 mt-2">Gestiona y rastrea todos los presupuestos de clientes</p>
           </div>
-          <Link to="/budgets/new">
-            <Button className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
-              <Plus className="h-4 w-4" />
-              New Budget
-            </Button>
-          </Link>
+          <Button onClick={() => navigate('/budgets/new')} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Presupuesto
+          </Button>
         </div>
 
-        {/* Summary Dashboard */}
-        <BudgetsSummaryCards
-          totalBudgets={budgets.length}
-          totalRevenue={totalRevenue}
-          pendingRevenue={pendingRevenue}
-          statusCounts={statusCounts}
-        />
+        {/* Role Selector */}
+        <RoleSelector />
 
-        {/* Revenue Breakdown */}
-        <RevenueBreakdownCard
-          totalRevenue={totalRevenue}
-          pendingRevenue={pendingRevenue}
-        />
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Presupuestos</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                </div>
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Filters */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Valor Total</p>
+                  <p className="text-2xl font-bold text-slate-900">${stats.totalRevenue.toLocaleString()}</p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Pendientes de Aprobación</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pending}</p>
+                </div>
+                <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Promedio Presupuesto</p>
+                  <p className="text-2xl font-bold text-slate-900">${stats.avgAmount.toLocaleString()}</p>
+                </div>
+                <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <TrendingDown className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Search */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search budgets..."
+                  placeholder="Buscar presupuestos por nombre de cliente o tipo de evento..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
-                  aria-label="Search budgets by client name or activities"
                 />
               </div>
               
-              {/* Status Filter */}
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as BudgetStatus | 'all')}>
-                <SelectTrigger aria-label="Filter by status">
-                  <SelectValue placeholder="All statuses" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filtrar por estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All ({statusCounts.all})</SelectItem>
-                  <SelectItem value="pending">Pending ({statusCounts.pending})</SelectItem>
-                  <SelectItem value="paid">Paid ({statusCounts.paid})</SelectItem>
-                  <SelectItem value="canceled">Canceled ({statusCounts.canceled})</SelectItem>
+                  <SelectItem value="all">Todos los Estados</SelectItem>
+                  <SelectItem value="draft">Borrador</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="approved">Aprobado</SelectItem>
+                  <SelectItem value="reserva">Reserva</SelectItem>
+                  <SelectItem value="completed">Completado</SelectItem>
+                  <SelectItem value="rejected">Rechazado</SelectItem>
                 </SelectContent>
               </Select>
-              
-              {/* Date Range */}
-              <Input
-                type="date"
-                placeholder="Start date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                aria-label="Filter by start date"
-              />
-              
-              <Input
-                type="date"
-                placeholder="End date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                aria-label="Filter by end date"
-              />
+
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Fecha de Creación</SelectItem>
+                  <SelectItem value="amount">Monto Total</SelectItem>
+                  <SelectItem value="guests">Número de Invitados</SelectItem>
+                  <SelectItem value="name">Nombre del Cliente</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Budgets Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Budgets ({filteredBudgets.length})
-            </CardTitle>
-            <CardDescription>
-              {filteredBudgets.length === 0 ? 'No budgets match your current filters.' : 'Click on any budget to view details.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            {filteredBudgets.length > 0 ? (
-              <ResponsiveTable>
-                <ResponsiveTableHeader>
-                  <ResponsiveTableRow>
-                    <ResponsiveTableHeaderCell>Client</ResponsiveTableHeaderCell>
-                    <ResponsiveTableHeaderCell>Event Date</ResponsiveTableHeaderCell>
-                    <ResponsiveTableHeaderCell>Guests</ResponsiveTableHeaderCell>
-                    <ResponsiveTableHeaderCell>Amount</ResponsiveTableHeaderCell>
-                    <ResponsiveTableHeaderCell>Status</ResponsiveTableHeaderCell>
-                    <ResponsiveTableHeaderCell>Activities</ResponsiveTableHeaderCell>
-                  </ResponsiveTableRow>
-                </ResponsiveTableHeader>
-                <ResponsiveTableBody>
-                  {filteredBudgets.map((budget) => (
-                    <ResponsiveTableRow
-                      key={budget.id}
-                      onClick={() => handleBudgetClick(budget.id)}
-                    >
-                      <ResponsiveTableCell label="Client">
-                        <div className="font-medium">{budget.clientName}</div>
-                      </ResponsiveTableCell>
-                      <ResponsiveTableCell label="Event Date">
-                        {formatDate(budget.eventDate)}
-                      </ResponsiveTableCell>
-                      <ResponsiveTableCell label="Guests">
-                        {budget.guestCount} guests
-                      </ResponsiveTableCell>
-                      <ResponsiveTableCell label="Amount">
-                        <span className="font-semibold">{formatCurrency(budget.totalAmount)}</span>
-                      </ResponsiveTableCell>
-                      <ResponsiveTableCell label="Status">
-                        {getStatusBadge(budget.status)}
-                      </ResponsiveTableCell>
-                      <ResponsiveTableCell label="Activities">
-                        <div className="flex flex-wrap gap-1">
-                          {budget.activities.slice(0, 2).map((activity, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {activity}
-                            </Badge>
-                          ))}
-                          {budget.activities.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{budget.activities.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </ResponsiveTableCell>
-                    </ResponsiveTableRow>
-                  ))}
-                </ResponsiveTableBody>
-              </ResponsiveTable>
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-slate-500 mb-4">No budgets found matching your criteria.</p>
-                <Link to="/budgets/new">
-                  <Button variant="outline">
+        {/* Budgets List */}
+        <div className="space-y-4">
+          {isLoading && <LoadingSpinner text="Cargando presupuestos..." />}
+          
+          {filteredBudgets.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No se encontraron presupuestos</h3>
+                <p className="text-slate-600 mb-4">
+                  {searchTerm || statusFilter !== 'all' 
+                    ? 'Intenta ajustar tu búsqueda o filtros' 
+                    : 'Comienza creando tu primer presupuesto'
+                  }
+                </p>
+                {!searchTerm && statusFilter === 'all' && (
+                  <Button onClick={() => navigate('/budgets/new')}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Budget
+                    Crear Primer Presupuesto
                   </Button>
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredBudgets.map((budget) => (
+                <Card key={budget.id} className="hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-semibold text-slate-900 mb-1">
+                          {budget.clientName}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-slate-600">
+                          {budget.eventType} • {new Date(budget.eventDate).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/budgets/${budget.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/budgets/${budget.id}/edit`)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar Presupuesto
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>
+                            <Download className="h-4 w-4 mr-2" />
+                            Exportar PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(budget.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {/* Status */}
+                      <div className="flex items-center justify-between">
+                        <Badge className={getStatusColor(budget.status)}>
+                          <span className="mr-1">{getStatusIcon(budget.status)}</span>
+                          {budget.status === 'draft' ? 'Borrador' :
+                           budget.status === 'pending' ? 'Pendiente' :
+                           budget.status === 'approved' ? 'Aprobado' :
+                           budget.status === 'completed' ? 'Completado' :
+                           budget.status === 'rejected' ? 'Rechazado' :
+                           budget.status === 'reserva' ? 'Reserva' : budget.status}
+                        </Badge>
+                        <span className="text-sm text-slate-500">
+                          {new Date(budget.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {/* Budget Details */}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-slate-500">Monto Total:</span>
+                          <div className="font-semibold text-slate-900">${budget.totalAmount.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Invitados:</span>
+                          <div className="font-semibold text-slate-900">{budget.guestCount}</div>
+                        </div>
+                      </div>
+
+                      {/* Budget Breakdown */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Comidas:</span>
+                          <span className="font-medium">${budget.mealsAmount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Actividades:</span>
+                          <span className="font-medium">${budget.activitiesAmount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Transporte:</span>
+                          <span className="font-medium">${budget.transportAmount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Alojamiento:</span>
+                          <span className="font-medium">${budget.accommodationAmount.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => navigate(`/budgets/${budget.id}`)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Ver
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => navigate(`/budgets/${budget.id}/edit`)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );

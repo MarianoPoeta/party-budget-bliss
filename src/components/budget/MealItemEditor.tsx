@@ -111,19 +111,19 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Customize Meal: {mealTemplate.name}</DialogTitle>
+          <DialogTitle>Personalizar Comida: {mealTemplate.name}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Meal Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Meal Details</CardTitle>
+              <CardTitle className="text-lg">Detalles de la Comida</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="meal-name">Meal Name</Label>
+                  <Label htmlFor="meal-name">Nombre de la Comida</Label>
                   <Input
                     id="meal-name"
                     value={editedMeal.name}
@@ -131,7 +131,7 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="restaurant">Restaurant</Label>
+                  <Label htmlFor="restaurant">Restaurante</Label>
                   <Input
                     id="restaurant"
                     value={editedMeal.restaurant}
@@ -140,7 +140,7 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
                 </div>
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={editedMeal.description}
@@ -149,13 +149,13 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
               </div>
               <div className="grid grid-cols-3 gap-4 text-sm bg-slate-50 p-3 rounded">
                 <div>
-                  <span className="font-medium">Guests:</span> {guestCount}
+                  <span className="font-medium">Invitados:</span> {guestCount}
                 </div>
                 <div>
-                  <span className="font-medium">Total Cost:</span> ${calculateTotalPrice().toFixed(2)}
+                  <span className="font-medium">Costo Total:</span> ${calculateTotalPrice().toFixed(2)}
                 </div>
                 <div>
-                  <span className="font-medium">Per Person:</span> ${calculatePricePerPerson().toFixed(2)}
+                  <span className="font-medium">Por Persona:</span> ${calculatePricePerPerson().toFixed(2)}
                 </div>
               </div>
             </CardContent>
@@ -164,7 +164,7 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
           {/* Meal Items */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Meal Items</CardTitle>
+              <CardTitle className="text-lg">Elementos de la Comida</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Existing Items */}
@@ -172,7 +172,7 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
                 <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
                   <div className="flex-1 grid grid-cols-4 gap-3">
                     <Input
-                      placeholder="Item name"
+                      placeholder="Nombre del elemento"
                       value={item.name}
                       onChange={(e) => updateItem(item.id, { name: e.target.value })}
                     />
@@ -202,7 +202,7 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Price per unit"
+                      placeholder="Precio por unidad"
                       value={item.pricePerUnit}
                       onChange={(e) => updateItem(item.id, { pricePerUnit: parseFloat(e.target.value) || 0 })}
                     />
@@ -228,19 +228,19 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
               {/* Add New Item */}
               <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
                 <Input
-                  placeholder="New item name"
+                  placeholder="Nombre del nuevo elemento"
                   value={newItem.name}
                   onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
                 />
                 <Input
                   type="number"
-                  placeholder="Qty"
+                  placeholder="Cant"
                   value={newItem.quantity || ''}
                   onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
                   className="w-20"
                 />
                 <Input
-                  placeholder="Unit"
+                  placeholder="Unidad"
                   value={newItem.unit}
                   onChange={(e) => setNewItem(prev => ({ ...prev, unit: e.target.value }))}
                   className="w-20"
@@ -248,7 +248,7 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
                 <Input
                   type="number"
                   step="0.01"
-                  placeholder="Price"
+                  placeholder="Precio"
                   value={newItem.pricePerUnit || ''}
                   onChange={(e) => setNewItem(prev => ({ ...prev, pricePerUnit: parseFloat(e.target.value) || 0 }))}
                   className="w-24"
@@ -263,10 +263,10 @@ const MealItemEditor: React.FC<MealItemEditorProps> = ({
           {/* Actions */}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={handleSave}>
-              Save Customized Meal
+              Guardar Comida Personalizada
             </Button>
           </div>
         </div>

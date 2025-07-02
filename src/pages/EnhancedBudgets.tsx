@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import Layout from '../components/Layout';
@@ -7,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Alert, AlertDescription } from '../components/ui/alert';
 import EnhancedBudgetsTable from '../components/budget/EnhancedBudgetsTable';
 import EnhancedBudgetForm from '../components/budget/EnhancedBudgetForm';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useBudgetsData } from '../hooks/useBudgetsData';
 import { useLoadingState } from '../hooks/useLoadingState';
 
@@ -38,11 +37,11 @@ const EnhancedBudgets = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this budget?')) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar este presupuesto?')) return;
 
     await withLoading(async () => {
       deleteBudget(id);
-    }, 'Failed to delete budget');
+    }, 'Error al eliminar el presupuesto');
   };
 
   const handleSave = async (budget: any) => {
@@ -51,7 +50,7 @@ const EnhancedBudgets = () => {
         updateBudget(editingBudget.id, budget);
       }
       return true;
-    }, 'Failed to save budget');
+    }, 'Error al guardar el presupuesto');
 
     if (success) {
       setShowForm(false);
@@ -69,7 +68,7 @@ const EnhancedBudgets = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" text="Loading budgets..." />
+          <LoadingSpinner size="lg" text="Cargando presupuestos..." />
         </div>
       </Layout>
     );
@@ -88,8 +87,8 @@ const EnhancedBudgets = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Budget Management</h1>
-            <p className="text-slate-600">Create, track, and manage bachelor party budgets efficiently</p>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Gestión de Presupuestos</h1>
+            <p className="text-slate-600">Crear, rastrear y gestionar presupuestos de despedidas de soltero eficientemente</p>
           </div>
           <Button
             onClick={() => setShowForm(true)}
@@ -97,7 +96,7 @@ const EnhancedBudgets = () => {
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            New Budget
+            Nuevo Presupuesto
           </Button>
         </div>
 
@@ -114,12 +113,12 @@ const EnhancedBudgets = () => {
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingBudget ? 'Edit Budget' : 'Create New Budget'}
+                {editingBudget ? 'Editar Presupuesto' : 'Crear Nuevo Presupuesto'}
               </DialogTitle>
               <DialogDescription>
                 {editingBudget 
-                  ? 'Make changes to your budget below. All changes will be saved automatically.'
-                  : 'Create a new budget by filling out the information below. You can add meals, activities, transport, and accommodation.'
+                  ? 'Realiza cambios en tu presupuesto a continuación. Todos los cambios se guardarán automáticamente.'
+                  : 'Crea un nuevo presupuesto completando la información a continuación. Puedes agregar comidas, actividades, transporte y alojamiento.'
                 }
               </DialogDescription>
             </DialogHeader>

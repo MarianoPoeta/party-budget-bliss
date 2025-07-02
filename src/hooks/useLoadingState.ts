@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 
 export const useLoadingState = (initialState = false) => {
@@ -7,7 +6,7 @@ export const useLoadingState = (initialState = false) => {
 
   const withLoading = useCallback(async <T>(
     asyncFn: () => Promise<T>,
-    errorMessage = 'An error occurred'
+    errorMessage = 'Ocurrió un error'
   ): Promise<T | null> => {
     setIsLoading(true);
     setError(null);
