@@ -11,6 +11,7 @@ import { Food } from './types/Food';
 import { Product } from './types/Product';
 import { TransportTemplate } from './types/Budget';
 import { Client } from './types/Client';
+import { WorkflowAutomation, WorkflowTrigger } from './services/workflowAutomation';
 import { mockMenus } from './mock/mockMenus';
 import { mockFoodItems } from './mock/mockFoodItems';
 import { mockProducts } from './mock/mockProducts';
@@ -463,16 +464,45 @@ export const useStore = create<StoreState>()(
           const prevBudget = state.budgets.find((b) => b.id === budget.id);
           const statusChangedToReserva = prevBudget && prevBudget.status !== 'reserva' && budget.status === 'reserva';
           const updatedBudgets = state.budgets.map((b) => (b.id === budget.id ? budget : b));
-          // Status change notification
-          if (statusChangedToReserva) {
-            state.addNotification({
-              id: Date.now(),
-              text: `Reserva confirmada para ${budget.clientName}. El evento está programado para ${budget.eventDate}.`,
-              time: new Date().toISOString(),
-              read: false,
-              role: 'admin'
-            });
+          
+          // Enhanced workflow automation
+          if (statusChangedToReserva && prevBudget) {
+            const trigger: WorkflowTrigger = {
+              budgetId: budget.id,
+              previousStatus: prevBudget.status,
+              newStatus: budget.status,
+              triggerDate: new Date().toISOString()
+            };
+
+            const workflowResult = WorkflowAutomation.handleStatusChange(
+              trigger,
+              budget,
+              state.products,
+              state.menus,
+              state.activities
+            );
+
+            if (workflowResult) {
+              // Add generated tasks
+              workflowResult.tasks.forEach(task => {
+                state.addTask(task);
+              });
+
+              // Add generated notifications
+              workflowResult.notifications.forEach(notification => {
+                state.addNotification(notification);
+              });
+
+              // Add success toast
+              state.addToast({
+                id: `workflow-${Date.now()}`,
+                message: `Reserva confirmada. Se generaron ${workflowResult.tasks.length} tareas automáticamente.`,
+                type: 'success',
+                duration: 5000
+              });
+            }
           }
+          
           return { budgets: updatedBudgets };
         });
       },

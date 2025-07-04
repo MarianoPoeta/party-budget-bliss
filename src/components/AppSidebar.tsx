@@ -1,4 +1,4 @@
-import { Calendar, DollarSign, Home, Settings, Bell, Moon, Sun, LogOut, User } from 'lucide-react';
+import { Calendar, DollarSign, Home, Settings, Bell, Moon, Sun, LogOut, User, CalendarDays, CheckSquare } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -37,11 +37,14 @@ const navByRole = {
   logistics: [
     { name: 'Panel Principal', href: '/dashboard', icon: Home },
     { name: 'Presupuestos', href: '/budgets', icon: Calendar },
+    { name: 'Planificación Semanal', href: '/weekly-planning', icon: CalendarDays },
+    { name: 'Mis Tareas', href: '/tasks', icon: CheckSquare },
     { name: 'Clientes', href: '/clients', icon: User },
   ],
   cook: [
     { name: 'Panel Principal', href: '/dashboard', icon: Home },
     { name: 'Presupuestos', href: '/budgets', icon: Calendar },
+    { name: 'Mis Tareas', href: '/tasks', icon: CheckSquare },
     { name: 'Clientes', href: '/clients', icon: User },
   ],
 };

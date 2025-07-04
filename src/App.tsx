@@ -23,6 +23,8 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const Login = React.lazy(() => import('./pages/Login'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const Clients = React.lazy(() => import('./pages/Clients'));
+const WeeklyPlanning = React.lazy(() => import('./pages/WeeklyPlanning'));
+const TaskDashboard = React.lazy(() => import('./pages/TaskDashboard'));
 
 import './App.css';
 
@@ -122,6 +124,16 @@ const App: React.FC = () => {
               <Route path="/clients" element={
                 <RequireAuth>
                   <Clients />
+                </RequireAuth>
+              } />
+              <Route path="/weekly-planning" element={
+                <RequireAuth>
+                  <WeeklyPlanning />
+                </RequireAuth>
+              } />
+              <Route path="/tasks" element={
+                <RequireAuth>
+                  <TaskDashboard />
                 </RequireAuth>
               } />
               <Route path="/configuration" element={
