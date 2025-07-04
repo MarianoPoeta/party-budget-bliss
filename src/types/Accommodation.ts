@@ -1,13 +1,17 @@
-
 export interface Accommodation {
   id: string;
   name: string;
-  description: string;
-  pricePerNight: number;
-  maxOccupancy: number;
-  roomType: 'single' | 'double' | 'suite' | 'apartment' | 'villa' | 'hostel';
-  amenities: string[];
-  location: string;
-  rating: number; // 1-5 stars
+  address: string;
+  costPerNight: number; // Cost to the company
+  pricePerNight: number; // Price charged to client
+  maxCapacity: number; // Maximum guests
+  description?: string;
+  roomType?: string;
+  maxOccupancy?: number; // Legacy field - use maxCapacity instead
+  amenities?: string[];
+  location?: string;
+  rating?: number;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }

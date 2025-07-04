@@ -38,11 +38,14 @@ export interface ActivityTemplate extends BudgetTemplate {
 }
 
 export interface TransportTemplate extends BudgetTemplate {
-  vehicleType: 'bus' | 'minivan' | 'car' | 'limousine' | 'boat';
+  pricePerGuest: number;
+  costToCompany: number;
+  type: string;
   capacity: number;
-  pricePerHour: number;
+  vehicleType?: 'bus' | 'minivan' | 'car' | 'limousine' | 'boat';
+  pricePerHour?: number;
   pricePerKm?: number;
-  includesDriver: boolean;
+  includesDriver?: boolean;
 }
 
 export interface StayTemplate extends BudgetTemplate {

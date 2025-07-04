@@ -43,7 +43,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
   };
 
   const handleMenuSelect = (menu: Menu) => {
-    const calculatedPrice = menu.pricePerPerson * guestCount;
+    const calculatedPrice = (menu.pricePerPerson || 0) * guestCount;
     onSelect?.(menu, calculatedPrice, guestCount);
   };
 
@@ -55,7 +55,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
 
   const handleSaveEditedMenu = () => {
     if (editedMenu) {
-      const calculatedPrice = editedMenu.pricePerPerson * guestCount;
+      const calculatedPrice = (editedMenu.pricePerPerson || 0) * guestCount;
       onSelect?.(editedMenu, calculatedPrice, guestCount);
       setIsEditDialogOpen(false);
       setEditedMenu(null);
@@ -78,13 +78,13 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
       };
       setEditedMenu({
         ...editedMenu,
-        items: [...editedMenu.items, newItem]
+        items: [...(editedMenu.items || []), newItem]
       });
     }
   };
 
   const updateMenuItem = (itemId: string, updates: Partial<MenuItem>) => {
-    if (editedMenu) {
+    if (editedMenu && editedMenu.items) {
       setEditedMenu({
         ...editedMenu,
         items: editedMenu.items.map(item =>
@@ -95,7 +95,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
   };
 
   const removeMenuItem = (itemId: string) => {
-    if (editedMenu) {
+    if (editedMenu && editedMenu.items) {
       setEditedMenu({
         ...editedMenu,
         items: editedMenu.items.filter(item => item.id !== itemId)
@@ -118,9 +118,9 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {menus.map((menu) => {
-          const calculatedPrice = menu.pricePerPerson * guestCount;
-          const isValidForGuestCount = guestCount >= menu.minPeople && guestCount <= menu.maxPeople;
-          const itemCount = menu.items.length;
+          const calculatedPrice = (menu.pricePerPerson || 0) * guestCount;
+          const isValidForGuestCount = guestCount >= (menu.minPeople || 0) && guestCount <= (menu.maxPeople || 999);
+          const itemCount = menu.items?.length || 0;
           
           return (
             <Card key={menu.id} className={`group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 ${
@@ -136,13 +136,13 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                       <h4 className="text-lg font-bold text-slate-900 group-hover:text-slate-700 transition-colors">
                         {menu.name}
                       </h4>
-                      <Badge className={`${typeColors[menu.type]} font-medium`}>
-                        {menu.type.charAt(0).toUpperCase() + menu.type.slice(1)}
+                      <Badge className={`${typeColors[menu.type || 'catering']} font-medium`}>
+                        {(menu.type || 'catering').charAt(0).toUpperCase() + (menu.type || 'catering').slice(1)}
                       </Badge>
                     </div>
                     {!isValidForGuestCount && (
                       <Badge variant="destructive" className="text-xs mb-2">
-                        {guestCount < menu.minPeople ? `Min ${menu.minPeople} guests` : `Max ${menu.maxPeople} guests`}
+                        {guestCount < (menu.minPeople || 0) ? `Min ${(menu.minPeople || 0)} guests` : `Max ${(menu.maxPeople || 999)} guests`}
                       </Badge>
                     )}
                   </div>
@@ -159,7 +159,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                 {/* Restaurant Info */}
                 <div className="flex items-center gap-2 mb-4 text-sm text-slate-500">
                   <MapPin className="h-4 w-4" />
-                  <span className="font-medium">{menu.restaurant}</span>
+                  <span className="font-medium">{menu.restaurant || 'Unknown Restaurant'}</span>
                 </div>
                 
                 {/* Stats Grid */}
@@ -169,14 +169,14 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                       <DollarSign className="h-4 w-4 text-green-600" />
                       <span className="text-sm font-medium text-slate-700">Per Person</span>
                     </div>
-                    <p className="text-lg font-bold text-green-600">${menu.pricePerPerson}</p>
+                    <p className="text-lg font-bold text-green-600">${menu.pricePerPerson || 0}</p>
                   </div>
                   <div className="bg-slate-50 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <Users className="h-4 w-4 text-blue-600" />
                       <span className="text-sm font-medium text-slate-700">Capacity</span>
                     </div>
-                    <p className="text-lg font-bold text-blue-600">{menu.minPeople}-{menu.maxPeople}</p>
+                    <p className="text-lg font-bold text-blue-600">{(menu.minPeople || 0)}-{(menu.maxPeople || 999)}</p>
                   </div>
                 </div>
 
@@ -187,12 +187,12 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                     <span className="text-sm font-medium text-slate-700">{itemCount} items</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {menu.items.slice(0, 3).map((item) => (
+                    {menu.items?.slice(0, 3).map((item) => (
                       <Badge key={item.id} variant="outline" className="text-xs">
                         {item.name}
                       </Badge>
                     ))}
-                    {menu.items.length > 3 && (
+                    {menu.items?.length > 3 && (
                       <Badge variant="outline" className="text-xs">
                         +{menu.items.length - 3} more
                       </Badge>
@@ -286,7 +286,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                     <Input
                       id="pricePerPerson"
                       type="number"
-                      value={editedMenu.pricePerPerson}
+                      value={editedMenu.pricePerPerson || 0}
                       onChange={(e) => setEditedMenu({ ...editedMenu, pricePerPerson: parseFloat(e.target.value) || 0 })}
                       className="mt-1"
                     />
@@ -305,7 +305,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                     <Input
                       id="minPeople"
                       type="number"
-                      value={editedMenu.minPeople}
+                      value={editedMenu.minPeople || 1}
                       onChange={(e) => setEditedMenu({ ...editedMenu, minPeople: parseInt(e.target.value) || 1 })}
                       className="mt-1"
                     />
@@ -315,8 +315,8 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                     <Input
                       id="maxPeople"
                       type="number"
-                      value={editedMenu.maxPeople}
-                      onChange={(e) => setEditedMenu({ ...editedMenu, maxPeople: parseInt(e.target.value) || 1 })}
+                      value={editedMenu.maxPeople || 999}
+                      onChange={(e) => setEditedMenu({ ...editedMenu, maxPeople: parseInt(e.target.value) || 999 })}
                       className="mt-1"
                     />
                   </div>
@@ -424,7 +424,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <p className="text-sm text-slate-600">Price per person</p>
-                    <p className="text-2xl font-bold text-green-600">${editedMenu.pricePerPerson}</p>
+                    <p className="text-2xl font-bold text-green-600">${editedMenu.pricePerPerson || 0}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-slate-600">Guest count</p>
@@ -433,7 +433,7 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({
                   <div className="text-center">
                     <p className="text-sm text-slate-600">Total price</p>
                     <p className="text-3xl font-bold text-green-700">
-                      ${(editedMenu.pricePerPerson * guestCount).toLocaleString()}
+                      ${(editedMenu.pricePerPerson || 0) * guestCount}
                     </p>
                   </div>
                 </div>

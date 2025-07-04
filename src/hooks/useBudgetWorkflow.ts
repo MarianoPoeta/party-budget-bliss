@@ -1,10 +1,16 @@
 import { useState, useCallback, useMemo } from 'react';
 import { EnhancedBudget, BudgetItem, ValidationError, BudgetItemType, BudgetWorkflowState } from '../types/EnhancedBudget';
 import { MealTemplate, ActivityTemplate, TransportTemplate, StayTemplate } from '../types/Budget';
+import { Menu } from '../types/Menu';
+import { Activity } from '../types/Activity';
+import { Accommodation } from '../types/Accommodation';
 
 const DEFAULT_BUDGET: Partial<EnhancedBudget> = {
   clientName: '',
+  clientEmail: '',
+  clientPhone: '',
   eventDate: '',
+  eventEndDate: '',
   guestCount: 0,
   selectedMeals: [],
   selectedActivities: [],
@@ -43,7 +49,7 @@ export const useBudgetWorkflow = (initialBudget?: Partial<EnhancedBudget>) => {
     return fieldMap[type];
   }, []);
 
-  const addItem = useCallback((type: BudgetItemType, template: MealTemplate | ActivityTemplate | TransportTemplate | StayTemplate) => {
+  const addItem = useCallback((type: BudgetItemType, template: Menu | Activity | Accommodation | TransportTemplate | MealTemplate | ActivityTemplate | StayTemplate) => {
     if (!template?.id) {
       console.error('Invalid template provided to addItem');
       return;

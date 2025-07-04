@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
+import { Dialog, DialogContent } from '../components/ui/dialog';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import EnhancedBudgetsTable from '../components/budget/EnhancedBudgetsTable';
-import EnhancedBudgetForm from '../components/budget/EnhancedBudgetForm';
+import ResponsiveBudgetsTable from '../components/budget/ResponsiveBudgetsTable';
+import UnifiedBudgetCreator from '../components/budget/UnifiedBudgetCreator';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useBudgetsData } from '../hooks/useBudgetsData';
 import { useLoadingState } from '../hooks/useLoadingState';
+import { useStore } from '../store';
 
 const EnhancedBudgets = () => {
   const { budgets, isLoading: dataLoading, error: dataError, updateBudget, deleteBudget } = useBudgetsData();
   const { isLoading, error, withLoading, clearError } = useLoadingState();
-  const [showForm, setShowForm] = useState(false);
+  const { addBudget } = useStore();
+  const [showCreator, setShowCreator] = useState(false);
   const [editingBudget, setEditingBudget] = useState<any>(null);
 
   // Transform existing budgets to include new fields
@@ -32,7 +33,7 @@ const EnhancedBudgets = () => {
     const budget = enhancedBudgets.find(b => b.id === id);
     if (budget) {
       setEditingBudget(budget);
-      setShowForm(true);
+      setShowCreator(true);
     }
   };
 
@@ -48,34 +49,49 @@ const EnhancedBudgets = () => {
     const success = await withLoading(async () => {
       if (editingBudget) {
         updateBudget(editingBudget.id, budget);
+      } else {
+        // For new budgets, add to store
+        addBudget({
+          ...budget,
+          id: budget.id || `budget-${Date.now()}`,
+          name: `${budget.clientName}'s Budget`,
+          eventType: 'Bachelor Party',
+          activities: budget.selectedActivities?.map((a: any) => a.template.name) || [],
+          status: 'draft',
+          mealsAmount: budget.breakdown?.meals || 0,
+          activitiesAmount: budget.breakdown?.activities || 0,
+          transportAmount: budget.breakdown?.transport || 0,
+          accommodationAmount: budget.breakdown?.stay || 0,
+          createdAt: new Date().toISOString(),
+          templateId: '1'
+        });
       }
       return true;
     }, 'Error al guardar el presupuesto');
 
     if (success) {
-      setShowForm(false);
+      setShowCreator(false);
       setEditingBudget(null);
     }
   };
 
   const handleCancel = () => {
-    setShowForm(false);
+    setShowCreator(false);
     setEditingBudget(null);
     clearError();
   };
 
   if (dataLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" text="Cargando presupuestos..." />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" text="Cargando presupuestos..." />
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <>
+      {/* Content with proper spacing */}
       <div className="space-y-6">
         {/* Error Display */}
         {(error || dataError) && (
@@ -85,44 +101,35 @@ const EnhancedBudgets = () => {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Gestión de Presupuestos</h1>
-            <p className="text-slate-600">Crear, rastrear y gestionar presupuestos de despedidas de soltero eficientemente</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Gestión de Presupuestos</h1>
+            <p className="text-slate-600 text-sm sm:text-base">Crear, rastrear y gestionar presupuestos de despedidas de soltero eficientemente</p>
           </div>
-          <Button
-            onClick={() => setShowForm(true)}
-            disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo Presupuesto
-          </Button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Button
+              onClick={() => setShowCreator(true)}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="sm:inline">Nuevo Presupuesto</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Enhanced Budgets Table */}
-        <EnhancedBudgetsTable
+        {/* Responsive Budgets Table */}
+        <ResponsiveBudgetsTable
           budgets={enhancedBudgets}
           onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
 
-        {/* Budget Form Dialog */}
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingBudget ? 'Editar Presupuesto' : 'Crear Nuevo Presupuesto'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingBudget 
-                  ? 'Realiza cambios en tu presupuesto a continuación. Todos los cambios se guardarán automáticamente.'
-                  : 'Crea un nuevo presupuesto completando la información a continuación. Puedes agregar comidas, actividades, transporte y alojamiento.'
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <EnhancedBudgetForm
+        {/* Unified Budget Creator Dialog */}
+        <Dialog open={showCreator} onOpenChange={setShowCreator}>
+          <DialogContent className="max-w-[98vw] w-full max-h-[98vh] overflow-hidden p-0">
+            <UnifiedBudgetCreator
               initialBudget={editingBudget}
               onSave={handleSave}
               onCancel={handleCancel}
@@ -130,7 +137,7 @@ const EnhancedBudgets = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </Layout>
+    </>
   );
 };
 

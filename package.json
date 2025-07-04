@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" vite build",
+    "build:original": "vite build",
     "build:dev": "vite build --mode development",
+    "build:debug": "cross-env DEBUG=vite:* vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -72,6 +74,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",

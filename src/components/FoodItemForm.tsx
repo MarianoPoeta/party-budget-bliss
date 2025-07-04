@@ -67,7 +67,7 @@ const FoodItemForm: React.FC<FoodItemFormProps> = ({
     }
   }, [foodItem, isOpen]);
 
-  const handleInputChange = (field: keyof FoodItem, value: any) => {
+  const handleInputChange = (field: keyof FoodItem, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

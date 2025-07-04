@@ -40,7 +40,7 @@ const Menus = () => {
 
   // Filter and sort menus
   const filteredMenus = useMemo(() => {
-    let filtered = menus.filter(menu => {
+    const filtered = menus.filter(menu => {
       const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            menu.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === 'all' || menu.type === typeFilter;

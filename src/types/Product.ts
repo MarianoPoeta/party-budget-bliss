@@ -1,15 +1,16 @@
 export interface Product {
   id: string;
   name: string;
+  category: string;
+  cost: number;
+  unit: string;
   description?: string;
-  category: 'meat' | 'vegetables' | 'beverages' | 'condiments' | 'equipment' | 'decorations' | 'other';
-  unit: 'kg' | 'units' | 'liters' | 'pieces' | 'boxes' | 'bags' | 'bottles';
-  estimatedPrice: number;
+  estimatedPrice?: number;
   supplier?: string;
   notes?: string;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProductRequirement {

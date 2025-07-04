@@ -7,9 +7,12 @@ import { mockTasks } from './mock/mockTasks';
 import { Activity } from './types/Activity';
 import { Accommodation } from './types/Accommodation';
 import { Menu } from './types/Menu';
+import { Food } from './types/Food';
 import { Product } from './types/Product';
 import { TransportTemplate } from './types/Budget';
+import { Client } from './types/Client';
 import { mockMenus } from './mock/mockMenus';
+import { mockFoodItems } from './mock/mockFoodItems';
 import { mockProducts } from './mock/mockProducts';
 
 // Development flag - set to true to enable session persistence
@@ -56,6 +59,14 @@ export interface StoreState {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   
+  // Client Management
+  clients: Client[];
+  setClients: (clients: Client[]) => void;
+  addClient: (client: Client) => void;
+  updateClient: (client: Client) => void;
+  deleteClient: (clientId: string) => void;
+  findOrCreateClient: (clientData: { name: string; email: string; phone: string }) => Client;
+  
   // Tasks Management
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
@@ -91,6 +102,13 @@ export interface StoreState {
   updateMenu: (menu: Menu) => void;
   deleteMenu: (menuId: string) => void;
   
+  // Food Management
+  foods: Food[];
+  setFoods: (foods: Food[]) => void;
+  addFood: (food: Food) => void;
+  updateFood: (food: Food) => void;
+  deleteFood: (foodId: string) => void;
+  
   // Product Management
   products: Product[];
   setProducts: (products: Product[]) => void;
@@ -117,6 +135,35 @@ export interface StoreState {
 }
 
 // Initial mock data
+const initialClients: Client[] = [
+  {
+    id: 'c1',
+    name: 'Juan Pérez',
+    email: 'juan.perez@email.com',
+    phone: '+54 11 1234-5678',
+    address: 'Av. Corrientes 1234, CABA',
+    company: 'Eventos JP',
+    taxId: '20-12345678-9',
+    notes: 'Cliente VIP, prefiere eventos al aire libre',
+    isActive: true,
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: 'c2',
+    name: 'María González',
+    email: 'maria.gonzalez@email.com',
+    phone: '+54 11 9876-5432',
+    address: 'Callao 567, CABA',
+    company: '',
+    taxId: '',
+    notes: '',
+    isActive: true,
+    createdAt: '2024-02-01T14:30:00Z',
+    updatedAt: '2024-02-01T14:30:00Z'
+  }
+];
+
 const initialBudgets: Budget[] = [
   {
     id: 'b1',
@@ -187,26 +234,47 @@ const initialActivities: Activity[] = [
 const initialAccommodations: Accommodation[] = [
   {
     id: 'a1',
-    name: 'Grand Hotel',
-    description: 'Luxury hotel in the city center',
+    name: 'Grand Hotel Buenos Aires',
+    address: 'Av. Corrientes 1234, C1043 CABA, Buenos Aires, Argentina',
+    costPerNight: 180, // Cost to company
+    pricePerNight: 250, // Price to client
+    maxCapacity: 4,
+    description: 'Hotel de lujo en el centro de la ciudad con vistas panorámicas',
     roomType: 'suite',
-    pricePerNight: 250,
-    maxOccupancy: 4,
-    amenities: ['WiFi', 'Breakfast', 'Pool'],
-    location: 'City Center',
+    maxOccupancy: 4, // Legacy field
+    amenities: ['WiFi', 'Desayuno', 'Piscina', 'Spa', 'Gimnasio'],
+    location: 'Centro de la Ciudad',
     rating: 5,
     isActive: true,
   },
   {
     id: 'a2',
-    name: 'Beachside Villa',
-    description: 'Private villa with ocean view',
+    name: 'Villa Costera Privada',
+    address: 'Ruta 11 Km 623, B7165 Villa Gesell, Provincia de Buenos Aires, Argentina',
+    costPerNight: 320, // Cost to company
+    pricePerNight: 400, // Price to client
+    maxCapacity: 8,
+    description: 'Villa privada con vista al océano y acceso directo a la playa',
     roomType: 'villa',
-    pricePerNight: 400,
-    maxOccupancy: 8,
-    amenities: ['WiFi', 'Private Beach', 'BBQ'],
-    location: 'Beachfront',
+    maxOccupancy: 8, // Legacy field
+    amenities: ['WiFi', 'Playa Privada', 'Parrilla', 'Jacuzzi', 'Estacionamiento'],
+    location: 'Frente al Mar',
     rating: 5,
+    isActive: true,
+  },
+  {
+    id: 'a3',
+    name: 'Hostería Boutique Palermo',
+    address: 'Guatemala 4778, C1425 CABA, Buenos Aires, Argentina',
+    costPerNight: 90, // Cost to company
+    pricePerNight: 120, // Price to client
+    maxCapacity: 2,
+    description: 'Hostería boutique en el corazón de Palermo con diseño moderno',
+    roomType: 'double',
+    maxOccupancy: 2, // Legacy field
+    amenities: ['WiFi', 'Desayuno', 'Terraza', 'Bar'],
+    location: 'Palermo',
+    rating: 4,
     isActive: true,
   },
 ];
@@ -214,39 +282,42 @@ const initialAccommodations: Accommodation[] = [
 const initialProducts: Product[] = [
   {
     id: 'p1',
-    name: 'Beef Ribs',
-    description: 'Premium beef ribs for asado',
+    name: 'Costillas de Res Premium',
     category: 'meat',
     unit: 'kg',
-    estimatedPrice: 25.00,
+    cost: 25.00, // Cost for company
+    description: 'Costillas de res premium para asado argentino',
+    estimatedPrice: 25.00, // Legacy field
     supplier: 'Carnes Premium',
-    notes: 'Order 24h in advance',
+    notes: 'Pedir con 24h de anticipación',
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 'p2',
-    name: 'Charcoal',
-    description: 'High-quality charcoal for grilling',
+    name: 'Carbón de Quebracho',
     category: 'equipment',
     unit: 'bags',
-    estimatedPrice: 15.00,
-    supplier: 'BBQ Supplies',
-    notes: 'Get 2 bags minimum',
+    cost: 15.00, // Cost for company
+    description: 'Carbón de quebracho de alta calidad para parrilla',
+    estimatedPrice: 15.00, // Legacy field
+    supplier: 'Suministros BBQ',
+    notes: 'Comprar mínimo 2 bolsas',
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 'p3',
-    name: 'Red Wine',
-    description: 'Premium red wine for dinner',
+    name: 'Vino Tinto Malbec',
     category: 'beverages',
     unit: 'bottles',
-    estimatedPrice: 18.00,
-    supplier: 'Wine & Spirits',
-    notes: 'Get 2 bottles per 4 people',
+    cost: 18.00, // Cost for company
+    description: 'Vino tinto Malbec premium para cena',
+    estimatedPrice: 18.00, // Legacy field
+    supplier: 'Vinos & Licores',
+    notes: 'Comprar 2 botellas por cada 4 personas',
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
@@ -258,31 +329,40 @@ const initialMenus: Menu[] = mockMenus;
 const initialTransportTemplates: TransportTemplate[] = [
   {
     id: 't1',
-    name: 'Minivan Ejecutiva',
-    description: 'Minivan de lujo para grupos pequeños',
-    vehicleType: 'minivan',
+    name: 'Minivan Ejecutiva Premium',
+    description: 'Minivan de lujo para grupos pequeños con chofer profesional',
+    pricePerGuest: 25, // Price per guest
+    costToCompany: 180, // Cost to company  
+    type: 'minivan',
     capacity: 8,
-    pricePerHour: 45,
+    vehicleType: 'minivan', // Legacy field
+    pricePerHour: 45, // Legacy field
     pricePerKm: 2.5,
     includesDriver: true,
   },
   {
     id: 't2',
-    name: 'Bus Turístico',
-    description: 'Bus espacioso para grupos grandes',
-    vehicleType: 'bus',
+    name: 'Bus Turístico Confort',
+    description: 'Bus espacioso y cómodo para grupos grandes con aire acondicionado',
+    pricePerGuest: 15, // Price per guest
+    costToCompany: 300, // Cost to company
+    type: 'bus',
     capacity: 25,
-    pricePerHour: 80,
+    vehicleType: 'bus', // Legacy field
+    pricePerHour: 80, // Legacy field
     pricePerKm: 3.0,
     includesDriver: true,
   },
   {
     id: 't3',
-    name: 'Limousina Premium',
-    description: 'Limousina de lujo para eventos especiales',
-    vehicleType: 'limousine',
+    name: 'Limousina Premium VIP',
+    description: 'Limousina de lujo para eventos especiales con champagne incluido',
+    pricePerGuest: 45, // Price per guest
+    costToCompany: 240, // Cost to company
+    type: 'limousine',
     capacity: 6,
-    pricePerHour: 120,
+    vehicleType: 'limousine', // Legacy field
+    pricePerHour: 120, // Legacy field
     pricePerKm: 5.0,
     includesDriver: true,
   },
@@ -300,6 +380,58 @@ export const useStore = create<StoreState>()(
         // Save to sessionStorage for immediate persistence
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('currentUser', JSON.stringify(user));
+        }
+      },
+      
+      // Client Management
+      clients: initialClients,
+      setClients: (clients: Client[]) => set({ clients }),
+      addClient: (client: Client) => {
+        set((state) => ({ clients: [...state.clients, client] }));
+      },
+      updateClient: (client: Client) => {
+        set((state) => ({
+          clients: state.clients.map((c) => (c.id === client.id ? client : c))
+        }));
+      },
+      deleteClient: (clientId: string) => {
+        set((state) => ({
+          clients: state.clients.filter((c) => c.id !== clientId)
+        }));
+      },
+      findOrCreateClient: (clientData: { name: string; email: string; phone: string }) => {
+        const state = get();
+        
+        // Try to find existing client by email or phone
+        let existingClient = state.clients.find(
+          c => c.email.toLowerCase() === clientData.email.toLowerCase() ||
+               c.phone === clientData.phone
+        );
+        
+        if (existingClient) {
+          // Update existing client with new information
+          const updatedClient = {
+            ...existingClient,
+            name: clientData.name,
+            email: clientData.email,
+            phone: clientData.phone,
+            updatedAt: new Date().toISOString()
+          };
+          state.updateClient(updatedClient);
+          return updatedClient;
+        } else {
+          // Create new client
+          const newClient: Client = {
+            id: `client-${Date.now()}`,
+            name: clientData.name,
+            email: clientData.email,
+            phone: clientData.phone,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          state.addClient(newClient);
+          return newClient;
         }
       },
       
@@ -331,48 +463,15 @@ export const useStore = create<StoreState>()(
           const prevBudget = state.budgets.find((b) => b.id === budget.id);
           const statusChangedToReserva = prevBudget && prevBudget.status !== 'reserva' && budget.status === 'reserva';
           const updatedBudgets = state.budgets.map((b) => (b.id === budget.id ? budget : b));
-          // Task automation
-          if (statusChangedToReserva && budget.templateId) {
-            try {
-              const { TaskGenerator } = require('./services/taskGenerator');
-              const { useTemplates } = require('./hooks/useTemplates');
-              const { products } = state;
-              const templates = useTemplates().templates;
-              const allTemplates = [
-                ...templates.meals,
-                ...templates.activities,
-                ...templates.transport,
-                ...templates.stay
-              ];
-              const template = allTemplates.find(t => t.id === budget.templateId);
-              if (template) {
-                const result = TaskGenerator.generateTasksFromBudget(budget, template, products);
-                // Add tasks
-                result.logisticsTasks.forEach(state.addTask);
-                result.cookTasks.forEach(state.addTask);
-                // Add notifications for logistics and cook
-                if (result.logisticsTasks.length > 0) {
-                  state.addNotification({
-                    id: Date.now(),
-                    text: `Nuevas tareas de logística para la reserva de ${budget.clientName}.`,
-                    time: new Date().toISOString(),
-                    read: false,
-                    role: 'logistics'
-                  });
-                }
-                if (result.cookTasks.length > 0) {
-                  state.addNotification({
-                    id: Date.now() + 1,
-                    text: `Nuevas tareas de cocina para la reserva de ${budget.clientName}.`,
-                    time: new Date().toISOString(),
-                    read: false,
-                    role: 'cook'
-                  });
-                }
-              }
-            } catch (err) {
-              console.error('Error generating tasks for reserva:', err);
-            }
+          // Status change notification
+          if (statusChangedToReserva) {
+            state.addNotification({
+              id: Date.now(),
+              text: `Reserva confirmada para ${budget.clientName}. El evento está programado para ${budget.eventDate}.`,
+              time: new Date().toISOString(),
+              read: false,
+              role: 'admin'
+            });
           }
           return { budgets: updatedBudgets };
         });
@@ -431,6 +530,23 @@ export const useStore = create<StoreState>()(
       deleteMenu: (menuId: string) => {
         set((state) => ({
           menus: state.menus.filter((m) => m.id !== menuId)
+        }));
+      },
+      
+      // Food Management
+      foods: mockFoodItems,
+      setFoods: (foods: Food[]) => set({ foods }),
+      addFood: (food: Food) => {
+        set((state) => ({ foods: [...state.foods, food] }));
+      },
+      updateFood: (food: Food) => {
+        set((state) => ({
+          foods: state.foods.map((f) => (f.id === food.id ? food : f))
+        }));
+      },
+      deleteFood: (foodId: string) => {
+        set((state) => ({
+          foods: state.foods.filter((f) => f.id !== foodId)
         }));
       },
       
@@ -500,6 +616,7 @@ export const useStore = create<StoreState>()(
       name: 'party-budget-bliss-storage',
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
+        clients: state.clients,
         budgets: state.budgets,
         activities: state.activities,
         accommodations: state.accommodations,

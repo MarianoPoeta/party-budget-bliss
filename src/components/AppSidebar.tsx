@@ -1,5 +1,5 @@
-import { Calendar, DollarSign, Home, MapPin, Users, UtensilsCrossed, Bell, Plus, Moon, Sun, Settings, LogOut, User } from 'lucide-react';
-import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
+import { Calendar, DollarSign, Home, Settings, Bell, Moon, Sun, LogOut, User } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -15,61 +15,34 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState } from 'react';
-import { mockUsers } from '../mock/mockUsers';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Badge } from './ui/badge';
 import { useStore } from '../store';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 
-// Role-based navigation
+// Simplified navigation - focus on core functionality
 const navByRole = {
   admin: [
     { name: 'Panel Principal', href: '/dashboard', icon: Home },
     { name: 'Presupuestos', href: '/budgets', icon: Calendar },
-    { name: 'Finanzas', href: '/finances', icon: DollarSign },
-    { name: 'Tareas de Logística', href: '/logistics', icon: MapPin },
-    { name: 'Tareas de Cocina', href: '/cook', icon: UtensilsCrossed },
+    { name: 'Clientes', href: '/clients', icon: User },
     { name: 'Configuración', href: '/configuration', icon: Settings },
   ],
   sales: [
     { name: 'Panel Principal', href: '/dashboard', icon: Home },
     { name: 'Presupuestos', href: '/budgets', icon: Calendar },
-    { name: 'Finanzas', href: '/finances', icon: DollarSign },
+    { name: 'Clientes', href: '/clients', icon: User },
   ],
   logistics: [
     { name: 'Panel Principal', href: '/dashboard', icon: Home },
-    { name: 'Tareas de Logística', href: '/logistics', icon: MapPin },
     { name: 'Presupuestos', href: '/budgets', icon: Calendar },
+    { name: 'Clientes', href: '/clients', icon: User },
   ],
   cook: [
     { name: 'Panel Principal', href: '/dashboard', icon: Home },
-    { name: 'Tareas de Cocina', href: '/cook', icon: UtensilsCrossed },
     { name: 'Presupuestos', href: '/budgets', icon: Calendar },
-  ],
-};
-
-// Example notifications for each role
-const notificationsByRole = {
-  admin: [
-    { id: 1, text: 'Actualización del sistema programada para esta noche', time: 'Ahora mismo', type: 'info' },
-    { id: 2, text: 'Todos los presupuestos exportados', time: 'Hace 5m', type: 'success' },
-    { id: 3, text: 'Usuario Carla Cook agregó un nuevo menú', time: 'Hace 1h', type: 'info' },
-  ],
-  sales: [
-    { id: 1, text: 'Nuevo presupuesto aprobado', time: 'Hace 2m', type: 'success' },
-    { id: 2, text: 'Cliente Lucas solicitó una cotización', time: 'Hace 12m', type: 'info' },
-    { id: 3, text: 'Menú actualizado para Martín', time: 'Hace 1h', type: 'info' },
-  ],
-  logistics: [
-    { id: 1, text: 'Nueva tarea asignada: Batalla de Paintball', time: 'Hace 3m', type: 'warning' },
-    { id: 2, text: 'Transporte requerido para Go-Karting', time: 'Hace 20m', type: 'info' },
-    { id: 3, text: 'Alojamiento Villa Beachside confirmado', time: 'Hace 2h', type: 'success' },
-  ],
-  cook: [
-    { id: 1, text: 'Nuevo menú solicitado: Brunch Vegano', time: 'Hace 5m', type: 'warning' },
-    { id: 2, text: 'Necesidad: 3x Postres Sin Gluten', time: 'Hace 30m', type: 'warning' },
-    { id: 3, text: 'Tarea marcada como completada: Servicio de Cena', time: 'Hace 1h', type: 'success' },
+    { name: 'Clientes', href: '/clients', icon: User },
   ],
 };
 
@@ -81,7 +54,6 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const [showDark, setShowDark] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [quickOpen, setQuickOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { notifications } = useStore();
 
@@ -101,25 +73,6 @@ export function AppSidebar() {
   // Avatar fallback: initials
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-  // Quick actions by role
-  const quickActions = {
-    admin: [
-      { label: 'Nuevo Presupuesto', onClick: () => navigate('/budgets/new'), icon: Plus },
-      { label: 'Nueva Actividad', onClick: () => navigate('/activities'), icon: Users },
-      { label: 'Nuevo Menú', onClick: () => navigate('/menus'), icon: UtensilsCrossed },
-    ],
-    sales: [
-      { label: 'Nuevo Presupuesto', onClick: () => navigate('/budgets/new'), icon: Plus },
-      { label: 'Nueva Actividad', onClick: () => navigate('/activities'), icon: Users },
-    ],
-    logistics: [
-      { label: 'Nueva Tarea', onClick: () => navigate('/logistics'), icon: Plus },
-    ],
-    cook: [
-      { label: 'Nueva Necesidad', onClick: () => navigate('/cook'), icon: Plus },
-    ],
-  };
-
   // Dark mode toggle (demo only)
   const handleToggleDark = () => {
     setShowDark((d) => !d);
@@ -136,13 +89,8 @@ export function AppSidebar() {
     }, 500);
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'success': return '✅';
-      case 'warning': return '⚠️';
-      case 'error': return '❌';
-      default: return 'ℹ️';
-    }
+  const getNotificationIcon = () => {
+    return 'ℹ️'; // Simple info icon for all notifications
   };
 
   const getRoleName = (role: string) => {
@@ -156,9 +104,9 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-slate-200 bg-gradient-to-b from-slate-50 to-white transition-all duration-300 shadow-lg rounded-r-2xl">
+    <Sidebar collapsible="icon" className="border-r border-slate-200 bg-gradient-to-b from-slate-50 to-white transition-all duration-300 shadow-lg">
       {/* User Profile Section */}
-      <SidebarHeader className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-20 rounded-tr-2xl">
+      <SidebarHeader className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-20">
         <div className="flex items-center gap-3 px-4 py-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -210,7 +158,7 @@ export function AppSidebar() {
                     <li className="p-4 text-slate-500 text-sm text-center">No hay notificaciones</li>
                   ) : filteredNotifications.map(n => (
                     <li key={n.id} className="p-4 hover:bg-slate-50 transition-colors duration-200 flex items-start gap-3">
-                      <span className="text-lg">{getNotificationIcon(n.type)}</span>
+                      <span className="text-lg">{getNotificationIcon()}</span>
                       <div className="flex-1">
                         <span className="text-slate-800 text-sm block">{n.text}</span>
                         <span className="text-xs text-slate-400">{n.time}</span>
@@ -227,7 +175,7 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Navigation Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-slate-500 font-semibold tracking-wide uppercase px-4 pt-2 pb-1 text-xs">Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-slate-500 font-semibold tracking-wide uppercase px-4 pt-4 pb-2 text-xs">Navegación</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => (
@@ -236,7 +184,7 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.href)}
                     tooltip={isCollapsed ? item.name : undefined}
-                    className={`rounded-xl transition-all duration-200 px-3 py-2 my-1 flex items-center gap-3 group hover:scale-105 ${
+                    className={`rounded-xl transition-all duration-200 px-3 py-2 my-1 mx-2 flex items-center gap-3 group hover:scale-105 ${
                       isActive(item.href) 
                         ? 'bg-blue-100/80 border-l-4 border-blue-600 shadow-sm text-blue-800 font-semibold' 
                         : 'hover:bg-slate-100 text-slate-700 hover:text-slate-900'
@@ -256,38 +204,15 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
-        {/* Divider */}
-        <div className="my-4 border-t border-slate-200" />
-        
-        {/* Quick Actions Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-slate-500 font-semibold tracking-wide uppercase px-4 pt-2 pb-1 text-xs">Acciones Rápidas</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="flex flex-col gap-2 px-4">
-              {quickActions[currentUser.role].map((action, i) => (
-                <Button 
-                  key={i} 
-                  variant="secondary" 
-                  className="rounded-lg shadow-sm flex items-center gap-2 hover:shadow-md transition-all duration-200 hover:scale-105" 
-                  onClick={action.onClick}
-                >
-                  <action.icon className="h-4 w-4" />
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       {/* Sidebar Footer with dark mode toggle */}
-      <SidebarFooter className="border-t border-slate-200 bg-gradient-to-t from-slate-50 to-white rounded-br-2xl">
+      <SidebarFooter className="border-t border-slate-200 bg-gradient-to-t from-slate-50 to-white">
         <div className="p-4 flex items-center justify-between">
           {!isCollapsed ? (
             <>
               <div className="text-center">
-                <p className="text-xs text-slate-500 mb-1">Fiesta Presupuesto Feliz</p>
+                <p className="text-xs text-slate-500 mb-1">Magnus</p>
                 <p className="text-xs font-medium text-slate-600">v1.0</p>
               </div>
               <Button 

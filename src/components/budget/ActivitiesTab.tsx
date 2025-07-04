@@ -12,21 +12,31 @@ import { ActivityTemplate } from '../../types/Budget';
 interface ActivitiesTabProps {
   templates: ActivityTemplate[];
   selectedActivities: BudgetItem[];
+  selectedTransport: BudgetItem[];
+  transportTemplates: any[];
   searchTerm: string;
+  guestCount: number;
   onSearchChange: (value: string) => void;
   onAddItem: (template: ActivityTemplate) => void;
   onRemoveItem: (itemId: string) => void;
   onUpdateItem: (itemId: string, updates: Partial<BudgetItem>) => void;
+  onAddTransport: (template: any) => void;
+  onRemoveTransport: (itemId: string) => void;
 }
 
 const ActivitiesTab: React.FC<ActivitiesTabProps> = ({
   templates,
   selectedActivities,
+  selectedTransport,
+  transportTemplates,
   searchTerm,
+  guestCount,
   onSearchChange,
   onAddItem,
   onRemoveItem,
-  onUpdateItem
+  onUpdateItem,
+  onAddTransport,
+  onRemoveTransport
 }) => {
   const filteredTemplates = templates.filter(template =>
     template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

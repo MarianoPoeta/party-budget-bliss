@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { BudgetItem } from '../../types/EnhancedBudget';
 import { Menu } from '../../types/Menu';
@@ -15,6 +14,7 @@ interface MealsTabProps {
   onSearchChange: (value: string) => void;
   onAddItem: (menu: Menu) => void;
   onRemoveItem: (itemId: string) => void;
+  onUpdateItem?: (itemId: string, updates: Partial<BudgetItem>) => void;
 }
 
 const MealsTab: React.FC<MealsTabProps> = ({
@@ -24,43 +24,59 @@ const MealsTab: React.FC<MealsTabProps> = ({
   guestCount,
   onSearchChange,
   onAddItem,
-  onRemoveItem
+  onRemoveItem,
+  onUpdateItem
 }) => {
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
 
-  const filteredTemplates = templates.filter(template =>
-    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.restaurant.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Ensure templates and selectedMeals are always arrays
+  const safeTemplates = templates || [];
+  const safeMeals = selectedMeals || [];
+  const safeGuestCount = guestCount || 0;
+  const safeSearchTerm = searchTerm || '';
+
+  const filteredTemplates = safeTemplates.filter(template => {
+    if (!template) return false;
+    
+    const name = (template.name || '').toLowerCase();
+    const description = (template.description || '').toLowerCase();
+    const type = (template.type || '').toLowerCase();
+    const search = safeSearchTerm.toLowerCase();
+    
+    return name.includes(search) || description.includes(search) || type.includes(search);
+  });
 
   const handleEditMenu = (menu: Menu) => {
-    setEditingMenu(menu);
+    if (menu) {
+      setEditingMenu(menu);
+    }
   };
 
   const handleSaveCustomizedMenu = (customizedMenu: Menu) => {
-    onAddItem(customizedMenu);
-    setEditingMenu(null);
+    if (customizedMenu) {
+      onAddItem(customizedMenu);
+      setEditingMenu(null);
+    }
   };
 
   return (
     <div className="space-y-6">
       <MenuSearch
-        searchTerm={searchTerm}
+        searchTerm={safeSearchTerm}
         onSearchChange={onSearchChange}
       />
 
       <SelectedMenusDisplay
-        selectedMeals={selectedMeals}
-        guestCount={guestCount}
+        selectedMeals={safeMeals}
+        guestCount={safeGuestCount}
         onEditMenu={handleEditMenu}
         onRemoveItem={onRemoveItem}
       />
 
       <AvailableMenusGrid
         templates={filteredTemplates}
-        selectedMeals={selectedMeals}
-        guestCount={guestCount}
+        selectedMeals={safeMeals}
+        guestCount={safeGuestCount}
         onEditMenu={handleEditMenu}
         onAddItem={onAddItem}
       />
@@ -70,7 +86,7 @@ const MealsTab: React.FC<MealsTabProps> = ({
           isOpen={!!editingMenu}
           onClose={() => setEditingMenu(null)}
           menu={editingMenu}
-          guestCount={guestCount}
+          guestCount={safeGuestCount}
           onSave={handleSaveCustomizedMenu}
         />
       )}

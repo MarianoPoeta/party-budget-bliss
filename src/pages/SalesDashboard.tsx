@@ -6,9 +6,9 @@ import { User } from '../types/User';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import Layout from '../components/Layout';
+
 import { useStore } from '../store';
-import { RoleSelector } from '../components/RoleSelector';
+
 
 // Mock budgets/events
 const mockBudgets = [
@@ -39,11 +39,7 @@ const SalesDashboard: React.FC = () => {
   };
 
   return (
-    <Layout>
-      {/* Role Selector */}
-      <RoleSelector />
-
-      <Card>
+    <Card>
         <CardHeader>
           <CardTitle className="text-xl">Sales/Coordinator Dashboard</CardTitle>
         </CardHeader>
@@ -99,7 +95,6 @@ const SalesDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </Layout>
   );
 };
 

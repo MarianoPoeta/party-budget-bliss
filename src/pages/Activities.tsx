@@ -42,7 +42,7 @@ const Activities = () => {
 
   // Filter and sort activities
   const filteredActivities = useMemo(() => {
-    let filtered = activities.filter(activity => {
+    const filtered = activities.filter(activity => {
       const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            activity.location.toLowerCase().includes(searchTerm.toLowerCase());

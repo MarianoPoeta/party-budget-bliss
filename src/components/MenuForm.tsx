@@ -19,9 +19,13 @@ interface MenuFormProps {
 const MenuForm: React.FC<MenuFormProps> = ({ menu, onSubmit, onCancel }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<Menu>(
-    menu || {
+    menu ? {
+      ...menu,
+      items: menu.items || []  // Ensure items is always an array
+    } : {
       id: '',
       name: '',
+      selectedFoods: [],
       description: '',
       type: 'dinner',
       pricePerPerson: 0,
@@ -41,7 +45,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ menu, onSubmit, onCancel }) => {
     special: 'bg-violet-50 text-violet-700 border-violet-200',
   };
 
-  const handleInputChange = (field: keyof Menu, value: any) => {
+  const handleInputChange = (field: keyof Menu, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -55,14 +59,14 @@ const MenuForm: React.FC<MenuFormProps> = ({ menu, onSubmit, onCancel }) => {
     };
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, newItem]
+      items: [...(prev.items || []), newItem]  // Ensure items is always an array
     }));
   };
 
   const updateMenuItem = (itemId: string, updates: Partial<MenuItem>) => {
     setFormData(prev => ({
       ...prev,
-      items: prev.items.map(item =>
+      items: (prev.items || []).map(item =>
         item.id === itemId ? { ...item, ...updates } : item
       )
     }));
@@ -71,7 +75,7 @@ const MenuForm: React.FC<MenuFormProps> = ({ menu, onSubmit, onCancel }) => {
   const removeMenuItem = (itemId: string) => {
     setFormData(prev => ({
       ...prev,
-      items: prev.items.filter(item => item.id !== itemId)
+      items: (prev.items || []).filter(item => item.id !== itemId)
     }));
   };
 

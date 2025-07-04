@@ -37,8 +37,12 @@ export interface ActivityTransportLink {
 
 export interface EnhancedBudget {
   id?: string;
+  clientId?: string;
   clientName: string;
+  clientEmail: string;
+  clientPhone: string;
   eventDate: string;
+  eventEndDate?: string;
   guestCount: number;
   selectedMeals: BudgetItem[];
   selectedActivities: BudgetItem[];

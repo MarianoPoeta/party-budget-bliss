@@ -59,7 +59,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   }, [product, isOpen]);
 
-  const handleInputChange = (field: keyof Product, value: any) => {
+  const handleInputChange = (field: keyof Product, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

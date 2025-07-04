@@ -29,14 +29,14 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
   };
 
   const calculateMenuCost = (menu: Menu) => {
-    return menu.pricePerPerson * guestCount;
+    return (menu.pricePerPerson || 0) * guestCount;
   };
 
   const isMenu = (template: any): template is Menu => {
-    return template && typeof template === 'object' && 'type' in template && 'pricePerPerson' in template && 'items' in template;
+    return template && typeof template === 'object' && 'type' in template && 'pricePerPerson' in template;
   };
 
-  if (selectedMeals.length === 0) {
+  if (!selectedMeals || selectedMeals.length === 0) {
     return null;
   }
 
@@ -50,10 +50,12 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {selectedMeals.map((item) => {
-          if (!isMenu(item.template)) return null;
+          if (!item || !isMenu(item.template)) return null;
           
           const menu = item.template as Menu;
           const hasCustomItems = menu.items && menu.items.length > 0;
+          const itemsCount = menu.items?.length || 0;
+          const menuType = menu.type || 'catering';
           
           return (
             <div key={item.id} className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -61,8 +63,8 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h4 className="text-lg font-semibold text-gray-900">{menu.name}</h4>
-                    <Badge className={`px-2 py-1 rounded-full text-xs font-medium border ${typeColors[menu.type]}`}>
-                      {menu.type.charAt(0).toUpperCase() + menu.type.slice(1)}
+                    <Badge className={`px-2 py-1 rounded-full text-xs font-medium border ${typeColors[menuType] || typeColors.catering}`}>
+                      {menuType.charAt(0).toUpperCase() + menuType.slice(1)}
                     </Badge>
                     {!menu.isActive && (
                       <Badge variant="secondary" className="text-xs">
@@ -70,15 +72,15 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{menu.description}</p>
+                  <p className="text-sm text-gray-600 mb-2">{menu.description || 'No description available'}</p>
                   <p className="text-sm text-gray-500 flex items-center gap-1">
                     <ChefHat className="h-3 w-3" />
-                    {menu.restaurant}
+                    {menu.restaurant || 'Restaurant not specified'}
                   </p>
                   <div className="text-lg font-semibold text-green-600 mt-3">
                     ${calculateMenuCost(menu).toLocaleString()} total 
                     <span className="text-sm font-normal text-gray-500 ml-2">
-                      (${menu.pricePerPerson.toFixed(2)}/persona)
+                      (${(menu.pricePerPerson || 0).toFixed(2)}/persona)
                     </span>
                   </div>
                 </div>
@@ -107,10 +109,10 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                 <div className="mt-4 p-4 bg-slate-50 rounded-lg border-l-4 border-blue-500">
                   <h5 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
                     <ChefHat className="h-4 w-4" />
-                    Menu Items ({menu.items.length}):
+                    Menu Items ({itemsCount}):
                   </h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {menu.items.slice(0, 6).map((menuItem, index) => (
+                    {menu.items && menu.items.slice(0, 6).map((menuItem, index) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
                         <div className="flex-1">
                           <span className="font-medium text-sm">{menuItem.name}</span>
@@ -121,9 +123,9 @@ const SelectedMenusDisplay: React.FC<SelectedMenusDisplayProps> = ({
                         </Badge>
                       </div>
                     ))}
-                    {menu.items.length > 6 && (
+                    {itemsCount > 6 && (
                       <div className="text-sm text-slate-500 font-medium">
-                        +{menu.items.length - 6} more items
+                        +{itemsCount - 6} more items
                       </div>
                     )}
                   </div>

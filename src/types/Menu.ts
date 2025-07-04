@@ -13,15 +13,25 @@ export interface MenuItem {
 export interface Menu {
   id: string;
   name: string;
-  description: string;
+  selectedFoods: string[]; // Food IDs that are part of this menu
+  foodQuantities?: Record<string, number>; // Quantities for each food
+  description?: string;
   type: 'breakfast' | 'lunch' | 'dinner' | 'brunch' | 'cocktail' | 'catering';
+  items: MenuItem[]; // Menu items
   pricePerPerson: number;
-  restaurant: string;
   minPeople: number;
   maxPeople: number;
-  items: MenuItem[];
-  productRequirements?: ProductRequirement[];
-  cookNotes?: string;
-  preparationTime?: number; // in minutes
+  restaurant?: string; // Restaurant or provider name
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FoodItem {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category?: string;
+  allergens?: string[];
 }

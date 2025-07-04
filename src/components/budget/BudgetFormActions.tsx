@@ -8,13 +8,15 @@ interface BudgetFormActionsProps {
   onSave: () => void;
   hasErrors: boolean;
   isDirty?: boolean;
+  isLoading?: boolean;
 }
 
 const BudgetFormActions: React.FC<BudgetFormActionsProps> = ({
   onCancel,
   onSave,
   hasErrors,
-  isDirty = false
+  isDirty = false,
+  isLoading = false
 }) => {
   return (
     <Card className="border-t-2 border-slate-200">
@@ -51,15 +53,15 @@ const BudgetFormActions: React.FC<BudgetFormActionsProps> = ({
             
             <Button
               onClick={onSave}
-              disabled={hasErrors}
+              disabled={hasErrors || isLoading}
               className={`flex items-center gap-2 ${
-                hasErrors 
+                hasErrors || isLoading
                   ? 'bg-slate-300 cursor-not-allowed' 
                   : 'bg-slate-800 hover:bg-slate-700'
               }`}
             >
               <Save className="h-4 w-4" />
-              Guardar Presupuesto
+              {isLoading ? 'Guardando...' : 'Guardar Presupuesto'}
             </Button>
           </div>
         </div>

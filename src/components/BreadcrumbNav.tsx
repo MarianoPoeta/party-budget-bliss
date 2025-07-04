@@ -17,15 +17,18 @@ interface BreadcrumbConfig {
 }
 
 const breadcrumbConfig: BreadcrumbConfig[] = [
-  { path: '/', label: 'Dashboard', icon: Home },
-  { path: '/dashboard', label: 'Dashboard', icon: Home },
-  { path: '/budgets', label: 'Budgets' },
-  { path: '/budgets/new', label: 'New Budget' },
-  { path: '/budgets/enhanced', label: 'Budget Management' },
-  { path: '/activities', label: 'Activities' },
-  { path: '/accommodations', label: 'Accommodations' },
-  { path: '/menus', label: 'Menus' },
-  { path: '/finances', label: 'Finances' },
+  { path: '/', label: 'Panel Principal', icon: Home },
+  { path: '/dashboard', label: 'Panel Principal', icon: Home },
+  { path: '/budgets', label: 'Presupuestos' },
+  { path: '/budgets/new', label: 'Nuevo Presupuesto' },
+  { path: '/budgets/enhanced', label: 'Gestión de Presupuestos' },
+  { path: '/clients', label: 'Clientes' },
+  { path: '/activities', label: 'Actividades' },
+  { path: '/accommodations', label: 'Alojamientos' },
+  { path: '/menus', label: 'Menús' },
+  { path: '/products', label: 'Productos' },
+  { path: '/transports', label: 'Transportes' },
+  { path: '/configuration', label: 'Configuración' },
 ];
 
 export function BreadcrumbNav() {
